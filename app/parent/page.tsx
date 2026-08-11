@@ -16,6 +16,12 @@ type PointRow = {
   points: number
 }
 
+function accountIsArchived(bannedUntil: string | null | undefined) {
+  if (!bannedUntil) return false
+  const timestamp = Date.parse(bannedUntil)
+  return Number.isNaN(timestamp) || timestamp > Date.now()
+}
+
 export default function ParentPage() {
   const router = useRouter()
 
@@ -49,6 +55,12 @@ export default function ParentPage() {
 
       if (!user) {
         router.push('/login')
+        return
+      }
+
+      if (accountIsArchived(user.banned_until)) {
+        await supabase.auth.signOut()
+        router.replace('/login')
         return
       }
 
@@ -245,6 +257,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     position: 'relative',
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
+    color: '#111827',
     overflow: 'hidden',
   },
 

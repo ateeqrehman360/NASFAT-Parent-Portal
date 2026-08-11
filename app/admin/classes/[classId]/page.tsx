@@ -55,13 +55,25 @@ export default function ClassPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) return router.push('/login')
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (profileError || profile?.role !== 'admin') {
+        await supabase.auth.signOut()
+        router.replace('/login')
+        return
+      }
 
       const { data: studentData, error } = await supabase
         .from('students')
         .select('id, first_name, last_name')
         .eq('class_id', classId)
+        .eq('active', true)
         .order('first_name')
 
       if (error) {
@@ -375,6 +387,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     position: 'relative',
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
+    color: '#111827',
     overflow: 'hidden',
   },
 
@@ -490,6 +503,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     background: 'rgba(255, 255, 255, 0.90)',
     borderRadius: 18,
     padding: isMobile ? 14 : 16,
+    color: '#111827',
 
     // Elevation instead of border
     boxShadow: isMobile
@@ -513,6 +527,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     border: '1px solid rgba(229, 231, 235, 0.68)',
     borderRadius: 18,
     padding: 14,
+    color: '#111827',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',

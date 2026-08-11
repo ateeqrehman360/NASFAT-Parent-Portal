@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Admin management setup
+
+Before deploying the admin management screens:
+
+1. Run [`supabase/migrations/20260811_admin_management.sql`](./supabase/migrations/20260811_admin_management.sql) in the Supabase SQL editor. It uses the existing `students.active` column, keeps current students active, and adds an active-class index.
+2. Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel and to the local server environment. Keep it server-only: never prefix it with `NEXT_PUBLIC_`.
+
+Management requests are handled by `/api/admin/manage`. The route validates the caller's Supabase session and checks `profiles.role = 'admin'` before using the server-only service-role client. Existing RLS policies are intentionally not changed, so parent visibility rules remain in effect.
+
+New parent accounts use `username@parent.nasfat-manchester.internal` solely as the internal Supabase Auth email. Parents continue to log in with their username and password.
+
+Parent archiving is reversible and does not delete profiles, relationships, or history. The management route uses Supabase Auth's server-only `ban_duration` setting to block an archived parent from signing in, and removes that ban when the account is restored. Existing RLS policies are not changed.

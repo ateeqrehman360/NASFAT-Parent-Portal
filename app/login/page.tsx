@@ -53,6 +53,7 @@ export default function LoginPage() {
   const normalizeAuthError = (raw: string) => {
     const s = raw.toLowerCase()
     if (s.includes('invalid login credentials')) return 'Username or password is incorrect.'
+    if (s.includes('banned')) return 'This account has been archived. Please contact the madrasa admin.'
     if (s.includes('username not confirmed')) return 'Your account is not confirmed yet. Please contact the madrasa admin.'
     if (s.includes('too many requests')) return 'Too many attempts. Please wait a moment and try again.'
     return raw
@@ -88,13 +89,20 @@ export default function LoginPage() {
     setLoading(false)
 
     if (error) {
-      setMsg('Username or password is incorrect.')
+      setMsg(normalizeAuthError(error.message))
       return
     }
 
     const user = data.user
     if (!user) {
       setMsg('Could not sign in. Please try again.')
+      return
+    }
+
+    const bannedUntil = user.banned_until ? Date.parse(user.banned_until) : null
+    if (bannedUntil !== null && (Number.isNaN(bannedUntil) || bannedUntil > Date.now())) {
+      await supabase.auth.signOut()
+      setMsg('This account has been archived. Please contact the madrasa admin.')
       return
     }
 
@@ -179,7 +187,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyUp={(e) => {
-                const caps = (e as any).getModifierState?.('CapsLock')
+                const caps = e.getModifierState?.('CapsLock')
                 setCapsOn(Boolean(caps))
               }}
               required

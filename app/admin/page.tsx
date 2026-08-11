@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
@@ -83,20 +84,22 @@ export default function AdminPage() {
 
       <div style={S.content}>
         <div style={S.header}>
-          <div>
+          <div style={S.headerCopy}>
             <div style={S.headerTitle}>Admin</div>
             <div style={S.headerSub}>Choose a class to log today’s points</div>
           </div>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.push('/login')
-            }}
-            style={S.logoutBtn}
-          >
-            Log out
-          </button>
+          <div style={S.headerActions}>
+            <img src="/nasfat-logo.png" alt="NASFAT Manchester" style={S.headerLogo} />
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut()
+                router.push('/login')
+              }}
+              style={S.logoutBtn}
+            >
+              Log out
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -115,7 +118,7 @@ export default function AdminPage() {
 
               {classes.length === 0 ? (
                 <p style={{ marginTop: 12, color: '#6B7280', fontWeight: 600 }}>
-                  No classes yet. Add rows in Supabase → classes.
+                  No classes yet. Create your first class in Class management below.
                 </p>
               ) : (
                 <div style={S.classGrid}>
@@ -132,43 +135,41 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+
+            <div style={{ ...S.card, ...S.managementCard }}>
+              <div style={S.cardTitle}>Management</div>
+              <div style={S.cardHint}>Manage students, parent accounts, and classes.</div>
+              <div style={S.classGrid}>
+                <button onClick={() => router.push('/admin/students')} style={S.classRow}><span style={{ fontWeight: 900 }}>Students</span><span style={S.chev}>→</span></button>
+                <button onClick={() => router.push('/admin/parents')} style={S.classRow}><span style={{ fontWeight: 900 }}>Parents</span><span style={S.chev}>→</span></button>
+                <button onClick={() => router.push('/admin/classes/manage')} style={S.classRow}><span style={{ fontWeight: 900 }}>Classes</span><span style={S.chev}>→</span></button>
+              </div>
+            </div>
           </>
         )}
       </div>
 
-      <img
-          src="/nasfat-logo.png"
-          alt="NASFAT Manchester"
-          style={S.bottomLogo}
-        />  
     </main>
   )
 }
 
-const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
+const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   page: {
     position: 'relative',
     minHeight: '100vh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
+    color: '#111827',
     overflow: 'hidden',
-  },
-
-  bottomLogo: {
-    position: 'fixed',                 // stays bottom-middle even when scrolling
-    left: '50%',
-    transform: 'translateX(-50%)',
-    bottom: isMobile ? 12 : 16,
-    width: isMobile ? 90 : 110,
-    height: 'auto',
-    opacity: 0.85,
-    pointerEvents: 'none',             // doesn't block taps/clicks
-    zIndex: 0,                         // sits behind content
   },
 
   content: {
     position: 'relative',
     zIndex: 1,
-    padding: isMobile ? 14 : 24,
+    width: '100%',
+    maxWidth: 820,
+    boxSizing: 'border-box',
+    margin: '0 auto',
+    padding: isMobile ? '14px 14px 36px' : '24px 24px 44px',
   },
 
   // EXACT match to classId header
@@ -181,9 +182,27 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
+  },
+
+  headerCopy: {
+    minWidth: 0,
+    flex: 1,
+  },
+
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: isMobile ? 8 : 12,
+    flexShrink: 0,
+  },
+
+  headerLogo: {
+    width: isMobile ? 38 : 44,
+    height: 'auto',
+    flexShrink: 0,
   },
 
   headerTitle: {
@@ -200,7 +219,6 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     fontWeight: 700,
   },
 
-  // ✅ FIX: make logout SOLID (was transparent before)
   logoutBtn: {
     background: '#FFFFFF',
     border: '1px solid rgba(209, 213, 219, 1)',
@@ -209,7 +227,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     cursor: 'pointer',
     fontWeight: 900,
     color: '#1F3A5F',
-    width: isMobile ? '100%' : undefined,
+    minHeight: 44,
   },
 
   card: {
@@ -217,6 +235,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     background: 'rgba(255, 255, 255, 0.90)',
     borderRadius: 18,
     padding: isMobile ? 14 : 16,
+    color: '#111827',
 
     // Elevation instead of border
     boxShadow: isMobile
@@ -226,6 +245,11 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     // Keep glass effect
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
+  },
+
+  managementCard: {
+    background: 'rgba(234, 244, 251, 0.86)',
+    border: '1px solid rgba(207, 230, 246, 0.95)',
   },
 
   cardTitle: {
@@ -243,12 +267,11 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
 
   classGrid: {
     display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
     gap: 10,
     marginTop: 14,
   },
 
-  // ✅ FIX: make group/class rows SOLID like buttons (NOT transparent)
-  // This matches your classId ctrl buttons style concept:
   classRow: {
     width: '100%',
     textAlign: 'left' as const,
@@ -256,6 +279,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     border: '1px solid rgba(209, 213, 219, 1)',
     borderRadius: 14,
     padding: '14px 14px',
+    minHeight: 58,
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'space-between',
