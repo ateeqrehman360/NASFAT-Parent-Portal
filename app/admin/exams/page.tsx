@@ -48,7 +48,7 @@ function studentName(student: Pick<Student, 'first_name' | 'last_name'>) {
 }
 
 function displayScore(score: Score, maxScore: Score) {
-  if (score === null || score === '') return '—'
+  if (score === null || score === '') return '-'
   return maxScore === null || maxScore === '' ? String(score) : `${score}/${maxScore}`
 }
 
@@ -203,7 +203,7 @@ export default function ExamManagementPage() {
       <div style={ui.cardHeader}><div><h2 style={{ ...ui.cardTitle, margin: 0 }}>{form.result_id ? 'Edit exam result' : 'Enter exam results'}</h2><div data-body="true" style={ui.hint}>Choose the exam month, then enter a mark as 35/40 to show the total. Missing subjects can be added later.</div></div><span style={ui.countPill}>{role === 'staff' ? 'Staff entry' : 'Admin entry'}</span></div>
       <form onSubmit={save} aria-busy={saving}>
         <label htmlFor="exam-student-search" style={ui.label}>Find student<input id="exam-student-search" name="student_search" aria-label="Find student" placeholder="Search by student or group" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} style={ui.input} /></label>
-        <label htmlFor="exam-student" style={ui.label}>Student<select id="exam-student" name="student_id" required value={form.student_id} onChange={(event) => setForm((current) => ({ ...current, student_id: event.target.value }))} style={ui.input}><option value="">Choose a student</option>{matchingStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} — {student.class_name}</option>)}</select></label>
+        <label htmlFor="exam-student" style={ui.label}>Student<select id="exam-student" name="student_id" required value={form.student_id} onChange={(event) => setForm((current) => ({ ...current, student_id: event.target.value }))} style={ui.input}><option value="">Choose a student</option>{matchingStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} / {student.class_name}</option>)}</select></label>
         <label htmlFor="exam-month" style={ui.label}>Exam month<input id="exam-month" name="exam_month" type="month" required value={form.exam_month} onChange={(event) => setForm((current) => ({ ...current, exam_month: event.target.value }))} style={ui.input} /></label>
         <div className="nasfat-score-form">
           <label htmlFor="quran-score" style={ui.label}>Quran<input id="quran-score" name="quran_score" inputMode="text" placeholder="e.g. 35/40" value={form.quran_score} onChange={(event) => setForm((current) => ({ ...current, quran_score: event.target.value }))} style={ui.input} /></label>

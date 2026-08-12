@@ -150,7 +150,7 @@ export default function LoginPage() {
             <div>
               <div style={S.eyebrow}>NASFAT Manchester</div>
               <h1 data-heading="true" style={S.title}>Parent Portal</h1>
-              <div data-body="true" style={S.subTitle}>Welcome back. Sign in to continue.</div>
+              <div data-body="true" style={S.subTitle}>Sign in to continue.</div>
             </div>
 
             <div style={S.metaRight} aria-label="Today">
@@ -237,7 +237,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div className="nasfat-enter" style={S.footer}>NASFAT Manchester • Madrasa</div>
+        <div className="nasfat-enter" style={S.footer}>NASFAT Manchester / Madrasa</div>
       </div>
       <style jsx global>{`
         input::placeholder {
@@ -280,13 +280,11 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   },
 
   card: {
-    background: 'rgba(255, 255, 255, 0.93)',
-    border: '1px solid rgba(203, 213, 225, 0.76)',
-    borderRadius: isMobile ? 24 : 28,
+    background: 'rgba(255, 255, 255, 0.98)',
+    border: '1px solid rgba(186, 203, 218, 0.82)',
+    borderRadius: isMobile ? 20 : 22,
     padding: isMobile ? 18 : 24,
-    boxShadow: '0 22px 60px rgba(31, 58, 95, 0.14)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.08)',
   },
 
   top: {
@@ -299,7 +297,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   title: {
     margin: 0,
     fontSize: isMobile ? 20 : 22,
-    fontWeight: 900,
+    fontWeight: 800,
     color: '#1F3A5F',
     letterSpacing: -0.5,
     lineHeight: 1.1,
@@ -309,7 +307,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     marginBottom: 6,
     color: '#4E83A5',
     fontSize: 10,
-    fontWeight: 900,
+    fontWeight: 800,
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
   },
@@ -317,16 +315,17 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   subTitle: {
     marginTop: 6,
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: 700,
+    color: '#526277',
+    fontWeight: 500,
+    lineHeight: 1.45,
   },
 
   metaRight: {
     textAlign: 'right' as const,
     padding: '10px 12px',
-    borderRadius: 14,
-    border: '1px solid rgba(207, 230, 246, 0.85)',
-    background: 'rgba(234, 244, 251, 0.80)',
+    borderRadius: 12,
+    border: '1px solid #CFE6F6',
+    background: '#F0F8FD',
     minWidth: isMobile ? 108 : 126,
   },
 
@@ -334,14 +333,14 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     fontSize: 11,
     color: '#1F3A5F',
     opacity: 0.75,
-    fontWeight: 900,
+    fontWeight: 800,
   },
 
   metaValue: {
     marginTop: 2,
     fontSize: 12,
     color: '#1F3A5F',
-    fontWeight: 900,
+    fontWeight: 800,
   },
 
   netCard: {
@@ -368,15 +367,15 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     display: 'block',
     fontSize: 13,
     color: '#1F3A5F',
-    fontWeight: 900,
+    fontWeight: 800,
     marginBottom: 6,
   },
 
   input: {
     width: '100%',
     minHeight: 50,
-    borderRadius: 14,
-    border: '1px solid rgba(209, 213, 219, 1)',
+    borderRadius: 12,
+    border: '1px solid #B9C8D7',
     background: '#FFFFFF',
     padding: '12px 14px',
     fontSize: 16,
@@ -411,12 +410,12 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   checkboxText: {
     fontSize: 13,
     color: '#1F3A5F',
-    fontWeight: 900,
+    fontWeight: 800,
   },
 
   capsWarn: {
     fontSize: 12,
-    fontWeight: 900,
+    fontWeight: 800,
     color: '#92400E',
     background: 'rgba(255, 251, 235, 0.92)',
     border: '1px solid rgba(252, 211, 77, 0.7)',
@@ -427,16 +426,16 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   primaryBtn: {
     width: '100%',
     marginTop: 14,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: '12px 14px',
-    border: '1px solid rgba(15, 23, 42, 0.2)',
-    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
+    border: '1px solid #152C4A',
+    background: '#1F3A5F',
     color: '#FFFFFF',
-    fontWeight: 900,
+    fontWeight: 800,
     cursor: 'pointer',
     fontSize: 16,
     minHeight: 48,
-    boxShadow: '0 10px 22px rgba(31, 58, 95, 0.24)',
+    boxShadow: '0 5px 12px rgba(31, 58, 95, 0.16)',
   },
 
   primaryBtnDisabled: {
@@ -447,16 +446,16 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   note: {
     marginTop: 12,
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: 600,
+    color: '#526277',
+    fontWeight: 500,
     lineHeight: 1.4,
   },
 
   footer: {
     textAlign: 'center' as const,
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: 700,
+    color: '#526277',
+    fontWeight: 600,
     opacity: 0.82,
     letterSpacing: '0.02em',
   },

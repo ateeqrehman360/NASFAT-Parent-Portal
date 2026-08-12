@@ -176,7 +176,7 @@ export default function AttendanceManagementPage() {
         class_date: classDate,
         present_student_ids: [...presentIds].filter((studentId) => eligibleIds.has(studentId)),
       })
-      setMessage(`Register saved — ${result.present_count} of ${result.student_count} marked present.`)
+      setMessage(`Register saved: ${result.present_count} of ${result.student_count} marked present.`)
       setDirty(false)
       setRefreshKey((current) => current + 1)
     } catch (saveError) {
@@ -268,7 +268,7 @@ export default function AttendanceManagementPage() {
                 <span style={ui.checkboxName}>{studentName(student)}</span>
                 <span style={ui.checkboxMeta}>{eligible ? (present ? 'Marked present' : closed ? 'Absent' : 'Not marked') : `Attendance starts ${student.attendance_started_on ?? 'when assigned'}`}</span>
               </span>
-              <span className="nasfat-number" style={{ ...registerStatus, ...(present ? presentStatus : {}) }}>{eligible ? (present ? 'Present' : closed ? 'Absent' : '—') : 'Later'}</span>
+              <span className="nasfat-number" style={{ ...registerStatus, ...(present ? presentStatus : {}) }}>{eligible ? (present ? 'Present' : closed ? 'Absent' : '-') : 'Later'}</span>
             </label>
           })}
         </div>

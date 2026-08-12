@@ -86,7 +86,6 @@ export default function AdminPage() {
       <div style={S.content}>
         <header className="nasfat-surface nasfat-enter" style={S.header}>
           <div style={S.headerCopy}>
-            <div style={S.eyebrow}>NASFAT Manchester</div>
             <h1 data-heading="true" style={S.headerTitle}>Admin dashboard</h1>
             <div data-body="true" style={S.headerSub}>Log points and manage the madrasa in one place.</div>
           </div>
@@ -155,16 +154,15 @@ export default function AdminPage() {
             </section>
 
             <section className="nasfat-surface nasfat-enter" style={{ ...S.card, ...S.managementCard }} aria-labelledby="management-heading">
-              <div style={S.sectionKicker}>Management</div>
-              <h2 id="management-heading" style={S.cardTitle}>Madrasa records</h2>
-              <div data-body="true" style={S.cardHint}>Students, family and staff access, groups, attendance, and exam results.</div>
+              <h2 id="management-heading" style={S.cardTitle}>Management</h2>
+              <div data-body="true" style={S.cardHint}>Students, parents, staff, groups, attendance, and exam results.</div>
               <div style={S.classGrid}>
-                <ManagementLink badge="ST" label="Students" description="Names, classes & archive" onClick={() => router.push('/admin/students')} style={S} />
-                <ManagementLink badge="PA" label="Parents" description="Accounts & student links" onClick={() => router.push('/admin/parents')} style={S} />
-                <ManagementLink badge="SF" label="Staff" description="Accounts & access" onClick={() => router.push('/admin/staff')} style={S} />
-                <ManagementLink badge="CL" label="Classes" description="Create & rename groups" onClick={() => router.push('/admin/classes/manage')} style={S} />
-                <ManagementLink badge="AT" label="Attendance" description="Saturday class register" onClick={() => router.push('/admin/attendance')} style={S} />
-                <ManagementLink badge="EX" label="Exam results" description="Enter & update scores" onClick={() => router.push('/admin/exams')} style={S} />
+                <ManagementLink label="Students" description="Names, groups, and archive" onClick={() => router.push('/admin/students')} style={S} />
+                <ManagementLink label="Parents" description="Accounts and student links" onClick={() => router.push('/admin/parents')} style={S} />
+                <ManagementLink label="Staff" description="Accounts and access" onClick={() => router.push('/admin/staff')} style={S} />
+                <ManagementLink label="Classes" description="Create and rename groups" onClick={() => router.push('/admin/classes/manage')} style={S} />
+                <ManagementLink label="Attendance" description="Saturday class register" onClick={() => router.push('/admin/attendance')} style={S} />
+                <ManagementLink label="Exam results" description="Enter and update scores" onClick={() => router.push('/admin/exams')} style={S} />
               </div>
             </section>
           </>
@@ -175,9 +173,9 @@ export default function AdminPage() {
   )
 }
 
-function ManagementLink({ badge, label, description, onClick, style }: { badge: string; label: string; description: string; onClick: () => void; style: Record<string, CSSProperties> }) {
+function ManagementLink({ label, description, onClick, style }: { label: string; description: string; onClick: () => void; style: Record<string, CSSProperties> }) {
   return <button className="nasfat-button nasfat-tile nasfat-stagger" type="button" onClick={onClick} style={style.classRow}>
-    <span style={style.rowLead}><span aria-hidden="true" style={style.managementBadge}>{badge}</span><span><span style={style.rowTitle}>{label}</span><span style={style.rowSubtitle}>{description}</span></span></span>
+    <span style={style.rowLead}><span><span style={style.rowTitle}>{label}</span><span style={style.rowSubtitle}>{description}</span></span></span>
     <span aria-hidden="true" style={style.chev}>→</span>
   </button>
 }
@@ -187,7 +185,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     position: 'relative',
     minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
-    color: '#111827',
+    color: '#1D2939',
     overflowX: 'hidden',
   },
 
@@ -202,18 +200,16 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   header: {
-    background: 'rgba(255, 255, 255, 0.92)',
-    border: '1px solid rgba(203, 213, 225, 0.76)',
-    borderRadius: isMobile ? 22 : 26,
+    background: 'rgba(255, 255, 255, 0.98)',
+    border: '1px solid rgba(186, 203, 218, 0.82)',
+    borderRadius: 20,
     padding: isMobile ? 15 : 20,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     flexWrap: 'nowrap',
-    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    boxShadow: '0 7px 20px rgba(31, 58, 95, 0.06)',
   },
 
   headerCopy: {
@@ -237,69 +233,59 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   headerTitle: {
     margin: 0,
     fontSize: isMobile ? 21 : 26,
-    fontWeight: 900,
+    fontWeight: 800,
     color: '#1F3A5F',
     lineHeight: 1.08,
     letterSpacing: '-0.025em',
   },
 
-  eyebrow: {
-    marginBottom: 6,
-    color: '#4E83A5',
-    fontSize: 10,
-    fontWeight: 900,
-    lineHeight: 1,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-  },
-
   headerSub: {
     marginTop: 6,
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: 700,
+    color: '#526277',
+    fontWeight: 500,
+    lineHeight: 1.45,
   },
 
   logoutBtn: {
     background: '#FFFFFF',
-    border: '1px solid rgba(209, 213, 219, 1)',
+    border: '1px solid #B9C8D7',
     borderRadius: 12,
     padding: '10px 14px',
     cursor: 'pointer',
-    fontWeight: 900,
+    fontWeight: 800,
     color: '#1F3A5F',
     minHeight: 44,
   },
 
   card: {
     marginTop: 16,
-    background: 'rgba(255, 255, 255, 0.94)',
-    border: '1px solid rgba(203, 213, 225, 0.72)',
-    borderRadius: isMobile ? 22 : 26,
+    background: 'rgba(255, 255, 255, 0.98)',
+    border: '1px solid rgba(186, 203, 218, 0.72)',
+    borderRadius: 20,
     padding: isMobile ? 16 : 20,
-    color: '#111827',
-    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
+    color: '#1D2939',
+    boxShadow: '0 7px 20px rgba(31, 58, 95, 0.055)',
   },
 
   managementCard: {
-    background: 'linear-gradient(145deg, rgba(234, 244, 251, 0.94), rgba(255, 255, 255, 0.94))',
-    border: '1px solid rgba(207, 230, 246, 0.95)',
+    background: 'rgba(255, 255, 255, 0.98)',
+    border: '1px solid rgba(186, 203, 218, 0.72)',
   },
 
   cardTitle: {
     margin: 0,
     fontSize: 18,
-    fontWeight: 900,
+    fontWeight: 800,
     color: '#1F3A5F',
   },
 
   cardHint: {
     marginTop: 5,
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: 700,
+    color: '#526277',
+    fontWeight: 500,
+    lineHeight: 1.45,
   },
 
   classGrid: {
@@ -313,8 +299,8 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     width: '100%',
     textAlign: 'left' as const,
     background: '#FFFFFF',
-    border: '1px solid rgba(203, 213, 225, 0.9)',
-    borderRadius: 16,
+    border: '1px solid #D6E0EA',
+    borderRadius: 14,
     padding: '12px 13px',
     minHeight: 68,
     cursor: 'pointer',
@@ -322,9 +308,8 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     fontSize: 15,
-    fontWeight: 900,
-    color: '#111827',
-    boxShadow: '0 3px 10px rgba(31, 58, 95, 0.045)',
+    fontWeight: 800,
+    color: '#1D2939',
   },
 
   cardHeader: {
@@ -342,7 +327,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     border: '1px solid #CFE6F6',
     color: '#1F3A5F',
     fontSize: 12,
-    fontWeight: 900,
+    fontWeight: 800,
   },
 
   emptyState: {
@@ -353,7 +338,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     border: '1px dashed #CBD5E1',
     color: '#64748B',
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 500,
     lineHeight: 1.45,
   },
 
@@ -367,16 +352,16 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   rowTitle: {
     display: 'block',
     color: '#1F3A5F',
-    fontWeight: 900,
+    fontWeight: 800,
     lineHeight: 1.2,
   },
 
   rowSubtitle: {
     display: 'block',
     marginTop: 4,
-    color: '#64748B',
+    color: '#526277',
     fontSize: 11,
-    fontWeight: 700,
+    fontWeight: 500,
     lineHeight: 1.2,
   },
 
@@ -391,37 +376,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     border: '1px solid #CFE6F6',
     color: '#1F3A5F',
     fontSize: 11,
-    fontWeight: 900,
+    fontWeight: 800,
     fontVariantNumeric: 'tabular-nums',
   },
 
-  managementBadge: {
-    width: 38,
-    height: 38,
-    flexShrink: 0,
-    display: 'grid',
-    placeItems: 'center',
-    borderRadius: 12,
-    background: '#1F3A5F',
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 900,
-    letterSpacing: '0.03em',
-    boxShadow: '0 6px 13px rgba(31, 58, 95, 0.2)',
-  },
-
-  sectionKicker: {
-    marginBottom: 6,
-    color: '#4E83A5',
-    fontSize: 10,
-    fontWeight: 900,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-  },
-
   chev: {
-    color: '#4DA3D9',
-    fontWeight: 900,
+    color: '#365F84',
+    fontWeight: 800,
     fontSize: 18,
   },
 
@@ -432,7 +393,6 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     borderRadius: 16,
     padding: 14,
     color: '#991B1B',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
+    fontWeight: 600,
   },
 })

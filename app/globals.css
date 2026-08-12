@@ -8,12 +8,12 @@
   --nasfat-navy-deep: #152c4a;
   --nasfat-blue: #eaf4fb;
   --nasfat-blue-strong: #cfe6f6;
-  --nasfat-surface: rgba(255, 255, 255, 0.94);
-  --nasfat-border: rgba(203, 213, 225, 0.78);
+  --nasfat-surface: rgba(255, 255, 255, 0.96);
+  --nasfat-border: rgba(186, 203, 218, 0.82);
   --nasfat-muted: #64748b;
-  --nasfat-shadow-sm: 0 2px 8px rgba(31, 58, 95, 0.06);
-  --nasfat-shadow-md: 0 14px 38px rgba(31, 58, 95, 0.11);
-  --nasfat-shadow-lg: 0 24px 70px rgba(31, 58, 95, 0.15);
+  --nasfat-shadow-sm: 0 2px 8px rgba(31, 58, 95, 0.045);
+  --nasfat-shadow-md: 0 10px 28px rgba(31, 58, 95, 0.075);
+  --nasfat-shadow-lg: 0 18px 48px rgba(31, 58, 95, 0.10);
   --nasfat-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -31,6 +31,7 @@
 html {
   min-height: 100%;
   background: var(--background);
+  scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-text-size-adjust: 100%;
 }
@@ -74,8 +75,9 @@ a {
   pointer-events: none;
   content: "";
   background:
-    radial-gradient(circle at 92% 4%, rgba(102, 180, 221, 0.17), transparent 26rem),
-    radial-gradient(circle at 2% 96%, rgba(31, 58, 95, 0.07), transparent 24rem);
+    radial-gradient(circle at 96% 2%, rgba(102, 180, 221, 0.12), transparent 23rem),
+    linear-gradient(180deg, rgba(234, 244, 251, 0.28), transparent 31rem),
+    radial-gradient(circle at 2% 100%, rgba(31, 58, 95, 0.045), transparent 22rem);
 }
 
 .nasfat-app h1,
@@ -96,7 +98,7 @@ a {
 .nasfat-app select,
 .nasfat-app textarea {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  transition-duration: 180ms;
+  transition-duration: 160ms;
   transition-timing-function: var(--nasfat-ease);
 }
 
@@ -119,10 +121,10 @@ a {
 .nasfat-app input:focus-visible,
 .nasfat-app select:focus-visible,
 .nasfat-app textarea:focus-visible {
-  outline: 3px solid rgba(78, 153, 198, 0.32);
+  outline: 2px solid rgba(46, 130, 179, 0.56);
   outline-offset: 2px;
-  border-color: #4e99c6 !important;
-  box-shadow: 0 0 0 4px rgba(78, 153, 198, 0.12);
+  border-color: #2e82b3 !important;
+  box-shadow: 0 0 0 3px rgba(78, 153, 198, 0.16);
 }
 
 .nasfat-app input:focus,
@@ -137,7 +139,9 @@ a {
 }
 
 .nasfat-surface {
-  box-shadow: var(--nasfat-shadow-md);
+  box-shadow: var(--nasfat-shadow-md) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .nasfat-button {
@@ -145,6 +149,7 @@ a {
   min-width: 44px;
   min-height: 44px;
   overflow: hidden;
+  transform: translateZ(0);
 }
 
 .nasfat-tile,
@@ -153,37 +158,32 @@ a {
   transition-property: transform, box-shadow, border-color, background-color;
   transition-duration: 200ms;
   transition-timing-function: var(--nasfat-ease);
+  box-shadow: none !important;
 }
 
 .nasfat-number {
   font-variant-numeric: tabular-nums;
 }
 
-.nasfat-enter,
-.nasfat-stagger {
-  animation: nasfat-rise 520ms var(--nasfat-ease) both;
-  animation-delay: var(--nasfat-delay, 0ms);
+.nasfat-enter {
+  animation: nasfat-rise 300ms var(--nasfat-ease) both;
 }
 
-.nasfat-stagger:nth-child(2) { --nasfat-delay: 55ms; }
-.nasfat-stagger:nth-child(3) { --nasfat-delay: 110ms; }
-.nasfat-stagger:nth-child(4) { --nasfat-delay: 165ms; }
-.nasfat-stagger:nth-child(5) { --nasfat-delay: 220ms; }
-.nasfat-stagger:nth-child(6) { --nasfat-delay: 275ms; }
-.nasfat-stagger:nth-child(n + 7) { --nasfat-delay: 320ms; }
+.nasfat-stagger {
+  animation: none;
+}
 
 .nasfat-status {
-  animation: nasfat-status-in 280ms var(--nasfat-ease) both;
+  animation: nasfat-status-in 220ms var(--nasfat-ease) both;
 }
 
 .nasfat-expand {
   transform-origin: top center;
-  animation: nasfat-expand-in 260ms var(--nasfat-ease) both;
+  animation: nasfat-expand-in 200ms var(--nasfat-ease) both;
 }
 
 .nasfat-logo {
-  filter: drop-shadow(0 8px 16px rgba(31, 58, 95, 0.12));
-  animation: nasfat-logo-in 650ms var(--nasfat-ease) both;
+  filter: drop-shadow(0 3px 8px rgba(31, 58, 95, 0.08));
 }
 
 .nasfat-spinner {
@@ -230,7 +230,7 @@ a {
 }
 
 @keyframes nasfat-rise {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -244,11 +244,6 @@ a {
   to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
-@keyframes nasfat-logo-in {
-  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
 @keyframes nasfat-spin {
   to { transform: rotate(360deg); }
 }
@@ -260,14 +255,21 @@ a {
 @media (hover: hover) and (pointer: fine) {
   .nasfat-app button:not(:disabled):hover,
   .nasfat-app a[href]:hover {
-    filter: brightness(0.985);
+    filter: brightness(0.99);
   }
 
   .nasfat-tile:hover,
   .nasfat-row:hover {
-    transform: translateY(-2px);
-    border-color: rgba(78, 153, 198, 0.5) !important;
-    box-shadow: 0 12px 30px rgba(31, 58, 95, 0.12) !important;
+    transform: translateY(-1px);
+    border-color: rgba(78, 153, 198, 0.42) !important;
+    background-color: #fbfdff !important;
+    box-shadow: 0 7px 18px rgba(31, 58, 95, 0.075) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .nasfat-surface {
+    background-image: none !important;
   }
 }
 
