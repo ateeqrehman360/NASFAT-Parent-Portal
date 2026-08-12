@@ -170,7 +170,7 @@ export default function ParentsManagementPage() {
         <div style={ui.fieldHeader}>
           <div>
             <div style={{ ...ui.label, marginTop: 0 }}>Linked students</div>
-            <div style={ui.hint}>{selectedStudents.length ? `${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'} selected.` : 'Optional. Link a student now or add the link later.'}</div>
+            <div style={ui.hint}>{selectedStudents.length ? `${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'} selected.` : 'Optional — link a student now or add the link later.'}</div>
           </div>
           <button className="nasfat-button" type="button" aria-expanded={showStudentPicker} aria-controls="student-link-picker" onClick={() => setShowStudentPicker((current) => !current)} style={ui.button}>{showStudentPicker ? 'Done selecting' : 'Choose students'}</button>
         </div>

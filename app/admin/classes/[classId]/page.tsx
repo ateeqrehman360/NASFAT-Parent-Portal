@@ -28,9 +28,6 @@ type StudentNote = {
 
 type EditorRole = 'admin' | 'staff'
 
-const MIN_DAILY_POINTS = -2
-const MAX_DAILY_POINTS = 2
-
 export default function ClassPage() {
   const { classId } = useParams<{ classId: string }>()
   const router = useRouter()
@@ -68,7 +65,7 @@ export default function ClassPage() {
     return () => window.removeEventListener('resize', update)
   }, [])
 
-  const clampPoints = (n: number) => Math.max(MIN_DAILY_POINTS, Math.min(MAX_DAILY_POINTS, n))
+  const clampPoints = (n: number) => Math.max(-20, Math.min(20, n))
 
   useEffect(() => {
     const loadData = async () => {
@@ -270,7 +267,6 @@ return (
             const notes = notesByStudent[s.id] ?? []
             const isOpen = openNotes[s.id]
             const status = noteStatus[s.id] ?? 'idle'
-            const currentPoints = points[s.id] ?? 0
 
             return (
               <article className="nasfat-row nasfat-stagger" key={s.id} style={S.studentRow}>
@@ -321,7 +317,7 @@ return (
                           {n.title && (
                             <div
                               style={{
-                                fontWeight: 800,
+                                fontWeight: 900,
                                 fontSize: 13,
                                 marginBottom: 4,
                               }}
@@ -430,8 +426,7 @@ return (
                     className="nasfat-button"
                     type="button"
                     aria-label={`Remove one point from ${name}`}
-                    disabled={currentPoints <= MIN_DAILY_POINTS}
-                    style={{ ...S.ctrlBtn, ...(currentPoints <= MIN_DAILY_POINTS ? S.ctrlBtnDisabled : {}) }}
+                    style={S.ctrlBtn}
                     onClick={() =>
                       setPoints((p) => ({
                         ...p,
@@ -439,17 +434,16 @@ return (
                       }))
                     }
                   >
-                    -
+                    –
                   </button>
 
-                  <div className="nasfat-number" aria-live="polite" aria-label={`${currentPoints} points`} style={S.valuePill}>{currentPoints}</div>
+                  <div className="nasfat-number" aria-live="polite" aria-label={`${points[s.id] ?? 0} points`} style={S.valuePill}>{points[s.id] ?? 0}</div>
 
                   <button
                     className="nasfat-button"
                     type="button"
                     aria-label={`Add one point to ${name}`}
-                    disabled={currentPoints >= MAX_DAILY_POINTS}
-                    style={{ ...S.ctrlBtn, ...(currentPoints >= MAX_DAILY_POINTS ? S.ctrlBtnDisabled : {}) }}
+                    style={S.ctrlBtn}
                     onClick={() =>
                       setPoints((p) => ({
                         ...p,
@@ -475,7 +469,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     position: 'relative',
     minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
-    color: '#1D2939',
+    color: '#111827',
     overflowX: 'hidden',
   },
 
@@ -503,31 +497,33 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   header: {
-    background: 'rgba(255, 255, 255, 0.98)',
-    border: '1px solid rgba(186, 203, 218, 0.82)',
-    borderRadius: 20,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 22 : 26,
     padding: isMobile ? 14 : 18,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    boxShadow: '0 7px 20px rgba(31, 58, 95, 0.06)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   backBtn: {
     background: '#FFFFFF',
-    border: '1px solid #B9C8D7',
+    border: '1px solid rgba(209, 213, 219, 1)',
     borderRadius: 12,
     padding: '10px 12px',
-    fontWeight: 800,
+    fontWeight: 900,
     cursor: 'pointer',
-    color: '#1F3A5F',
+    color: '#111827',
   },
 
   headerTitle: {
     margin: 0,
     fontSize: isMobile ? 19 : 23,
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
     lineHeight: 1.08,
     letterSpacing: '-0.02em',
@@ -536,16 +532,18 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   eyebrow: {
     marginBottom: 5,
     color: '#4E83A5',
-    fontSize: 11,
-    fontWeight: 800,
-    lineHeight: 1.2,
+    fontSize: 9,
+    fontWeight: 900,
+    lineHeight: 1,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 
   headerSub: {
     marginTop: 4,
     fontSize: 12,
-    color: '#526277',
-    fontWeight: 500,
+    color: '#6B7280',
+    fontWeight: 700,
   },
 
   stickyBar: {
@@ -553,28 +551,30 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     zIndex: 4,
     top: 10,
     marginTop: 14,
-    background: '#F0F8FD',
-    border: '1px solid #CFE6F6',
-    borderRadius: 18,
+    background: 'rgba(234, 244, 251, 0.94)',
+    border: '1px solid rgba(207, 230, 246, 0.95)',
+    borderRadius: isMobile ? 20 : 22,
     padding: isMobile ? 14 : 16,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     flexWrap: 'wrap',
-    boxShadow: '0 7px 20px rgba(31, 58, 95, 0.08)',
+    boxShadow: '0 10px 28px rgba(31, 58, 95, 0.11)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   mutedLabel: {
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
     opacity: 0.75,
   },
 
   todayBig: {
     fontSize: 20,
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
     marginTop: 2,
   },
@@ -592,25 +592,27 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
 
   saveBtn: {
     minHeight: 48,
-    background: '#1F3A5F',
+    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
     color: '#FFFFFF',
-    border: '1px solid #152C4A',
-    borderRadius: 12,
+    border: '1px solid rgba(15, 23, 42, 0.2)',
+    borderRadius: 14,
     padding: '12px 16px',
     cursor: 'pointer',
-    fontWeight: 800,
+    fontWeight: 900,
     width: isMobile ? '100%' : undefined,
-    boxShadow: '0 5px 12px rgba(31, 58, 95, 0.16)',
+    boxShadow: '0 8px 18px rgba(31, 58, 95, 0.23)',
   },
 
   card: {
     marginTop: 14,
-    background: 'rgba(255, 255, 255, 0.98)',
-    border: '1px solid rgba(186, 203, 218, 0.72)',
-    borderRadius: 20,
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(203, 213, 225, 0.72)',
+    borderRadius: 22,
     padding: isMobile ? 16 : 18,
-    color: '#1D2939',
-    boxShadow: '0 7px 20px rgba(31, 58, 95, 0.055)',
+    color: '#111827',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   grid: {
@@ -620,21 +622,24 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   studentRow: {
-    background: '#FFFFFF',
-    border: '1px solid #D6E0EA',
-    borderRadius: 16,
+    background: 'rgba(255, 255, 255, 0.91)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: 20,
     padding: isMobile ? 15 : 16,
-    color: '#1D2939',
+    color: '#111827',
     display: 'flex',
     justifyContent: 'space-between',
     flexDirection: isMobile ? 'column' : 'row',
     alignItems: isMobile ? 'stretch' : 'center',
     gap: 14,
+    boxShadow: '0 5px 16px rgba(31, 58, 95, 0.055)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
 
   studentName: {
     fontSize: 16,
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -645,8 +650,8 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   studentMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: '#526277',
-    fontWeight: 500,
+    color: '#6B7280',
+    fontWeight: 700,
   },
 
   controls: {
@@ -662,30 +667,27 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   ctrlBtn: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    border: '1px solid #B9C8D7',
+    borderRadius: 14,
+    border: '1px solid rgba(203, 213, 225, 0.95)',
     background: '#FFFFFF',
     fontSize: 20,
-    fontWeight: 800,
+    fontWeight: 900,
     cursor: 'pointer',
-    color: '#1F3A5F',
-  },
-
-  ctrlBtnDisabled: {
-    background: '#F8FAFC',
-    color: '#94A3B8',
-    opacity: 0.58,
+    color: '#111827',
+    boxShadow: '0 3px 9px rgba(31, 58, 95, 0.07)',
   },
 
   valuePill: {
     minWidth: 58,
     textAlign: 'center' as const,
     padding: '10px 12px',
-    borderRadius: 12,
-    background: '#EEF7FC',
-    border: '1px solid #CFE6F6',
-    fontWeight: 800,
+    borderRadius: 999,
+    background: 'rgba(255, 255, 255, 0.88)',
+    border: '1px solid rgba(229, 231, 235, 0.7)',
+    fontWeight: 900,
     color: '#1F3A5F',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
   },
 
   noteToggle: {
@@ -697,16 +699,16 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     borderRadius: 10,
     background: 'transparent',
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 850,
     textAlign: 'left',
   },
 
   existingNote: {
     marginBottom: 8,
     padding: 11,
-    borderRadius: 12,
-    border: '1px solid #D6E0EA',
-    background: '#FFFFFF',
+    borderRadius: 13,
+    border: '1px solid rgba(229, 231, 235, 0.7)',
+    background: 'rgba(255, 255, 255, 0.85)',
   },
 
   noteAdminRow: {
@@ -718,7 +720,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   noteDate: {
-    color: '#526277',
+    color: '#64748B',
     fontSize: 11,
     fontWeight: 800,
   },
@@ -731,13 +733,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     background: '#FFF1F2',
     color: '#B91C1C',
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 900,
   },
 
   notesPanel: {
     marginTop: 10,
     padding: 11,
-    borderRadius: 14,
+    borderRadius: 16,
     border: '1px solid #D8EAF7',
     background: '#F5FAFE',
   },
@@ -753,7 +755,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   notesTitle: {
     color: '#1F3A5F',
     fontSize: 13,
-    fontWeight: 800,
+    fontWeight: 900,
   },
 
   noteClose: {
@@ -764,7 +766,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     background: '#FFFFFF',
     color: '#1F3A5F',
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 850,
   },
 
   noteError: {

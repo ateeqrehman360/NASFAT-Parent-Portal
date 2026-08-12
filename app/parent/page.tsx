@@ -71,7 +71,7 @@ function formatExamMonth(date: string | null) {
 }
 
 function formatScore(score: number | string | null, maxScore: number | string | null) {
-  if (score === null) return '-'
+  if (score === null) return '—'
   return maxScore === null ? String(score) : `${score}/${maxScore}`
 }
 
@@ -378,8 +378,9 @@ export default function ParentPage() {
         <header className="nasfat-surface nasfat-enter" style={S.header}>
           <div style={S.headerLeft}>
             <div>
+              <div style={S.eyebrow}>Family portal</div>
               <h1 data-heading="true" style={S.headerTitle}>Parent Portal</h1>
-              <div style={S.headerSub}>Your students’ progress, notes, results, and attendance.</div>
+              <div style={S.headerSub}>Madrasa progress, results and behaviour points</div>
             </div>
           </div>
 
@@ -400,7 +401,7 @@ export default function ParentPage() {
           </div>
         </header>
 
-        <section className="nasfat-enter" style={S.topInfoCard} aria-label="Today's information">
+        <section className="nasfat-surface nasfat-enter" style={S.topInfoCard} aria-label="Today's information">
           <div>
             <div style={S.mutedLabel}>Today</div>
             <div className="nasfat-number" style={S.todayBig}>{todayLabel}</div>
@@ -608,12 +609,12 @@ export default function ParentPage() {
                       <div style={S.metricsRow}>
                         <div style={S.metricBox}>
                           <div style={S.metricLabel}>Attendance</div>
-                          <div className="nasfat-number" style={S.metricValue}>{s.active ? formatAttendancePercentage(attendance.percentage) : '-'}</div>
+                          <div className="nasfat-number" style={S.metricValue}>{s.active ? formatAttendancePercentage(attendance.percentage) : '—'}</div>
                         </div>
 
                         <div style={S.metricBox}>
                           <div style={S.metricLabel}>Today</div>
-                          <div className="nasfat-number" style={S.metricValue}>{todayVal === null ? '-' : todayVal}</div>
+                          <div className="nasfat-number" style={S.metricValue}>{todayVal === null ? '—' : todayVal}</div>
                         </div>
 
                         <div style={S.metricBox}>
@@ -658,70 +659,85 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   header: {
-    background: 'rgba(255, 255, 255, 0.98)',
-    border: '1px solid rgba(186, 203, 218, 0.82)',
-    borderRadius: isMobile ? 20 : 22,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 22 : 26,
     padding: isMobile ? 15 : 20,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
   headerTitle: {
     margin: 0,
     fontSize: isMobile ? 20 : 25,
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
     lineHeight: 1.08,
     letterSpacing: '-0.025em',
   },
+  eyebrow: {
+    marginBottom: 6,
+    color: '#4E83A5',
+    fontSize: 10,
+    fontWeight: 900,
+    lineHeight: 1,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+  },
   headerSub: {
     marginTop: 4,
     fontSize: 12,
-    color: '#526277',
-    fontWeight: 500,
+    color: '#6B7280',
+    fontWeight: 600,
   },
   headerLeft: {
     minWidth: 0,
-    flex: 1,
   },
 
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
-    flexWrap: 'nowrap',
+    gap: 12,
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
-    flexShrink: 0,
   },
 
   headerLogo: {
-    width: isMobile ? 30 : 44,
+    width: isMobile ? 38 : 44,
     height: 'auto',
     opacity: 0.95,
     flexShrink: 0,
   },
   logoutBtn: {
     background: '#FFFFFF',
-    border: '1px solid #B9C8D7',
-    borderRadius: 12,
-    padding: '10px 14px',
+    border: '1px solid rgba(209, 213, 219, 1)',
+    borderRadius: 14,
+    padding: '12px 16px', // ⬅ bigger
     cursor: 'pointer',
-    fontWeight: 800,
+    fontWeight: 900,
     color: '#1F3A5F',
-    minHeight: 44,
+    minHeight: 44, // ⬅ mobile accessibility
   },
 
   topInfoCard: {
-    marginTop: 18,
-    padding: isMobile ? '14px 0 4px' : '16px 0 5px',
-    borderBottom: '1px solid #D6E4EF',
+    marginTop: 16,
+    background: 'rgba(234, 244, 251, 0.92)',
+    border: '1px solid rgba(207, 230, 246, 0.85)',
+    borderRadius: isMobile ? 20 : 22,
+    padding: isMobile ? 14 : 16,
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     gap: 12,
     flexWrap: 'wrap',
+    boxShadow: '0 10px 28px rgba(31, 58, 95, 0.08)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
   mutedLabel: {
     fontSize: 12,
@@ -736,9 +752,14 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     marginTop: 2,
   },
   tipBox: {
-    padding: isMobile ? '0 0 4px' : '0 0 3px',
+    background: 'rgba(255, 255, 255, 0.86)',
+    border: '1px solid rgba(207, 230, 246, 0.85)',
+    borderRadius: 14,
+    padding: 12,
     maxWidth: isMobile ? '100%' : 420,
     width: isMobile ? '100%' : undefined,
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
   },
 
   errorCard: {
@@ -748,15 +769,18 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     borderRadius: 16,
     padding: 14,
     color: '#991B1B',
-    fontWeight: 600,
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
   },
 
   centerCard: {
     marginTop: 18,
-    background: '#FFFFFF',
-    border: '1px solid #D6E0EA',
-    borderRadius: 18,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(229, 231, 235, 0.8)',
+    borderRadius: 22,
     padding: 18,
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
   },
 
   notesSection: {
@@ -766,6 +790,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     background: '#FFF7E8',
     border: '1px solid #F3D39B',
     color: '#8A5208',
+    boxShadow: '0 5px 14px rgba(154, 90, 6, 0.10)',
   },
   noteMessage: {
     marginTop: 12,
@@ -789,10 +814,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
   },
   noteStudentCard: {
-    background: '#FFFFFF',
-    border: '1px solid #D6E0EA',
-    borderRadius: 18,
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(207, 230, 246, 0.95)',
+    borderRadius: 20,
     padding: isMobile ? 16 : 18,
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(14px)',
+    WebkitBackdropFilter: 'blur(14px)',
   },
   newNoteBadge: {
     flexShrink: 0,
@@ -812,9 +840,10 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
   currentNoteCard: {
     padding: 13,
-    borderRadius: 14,
+    borderRadius: 16,
     border: '1px solid #F3D39B',
-    background: '#FFF9ED',
+    background: 'linear-gradient(145deg, #FFF9ED, #FFFFFF)',
+    boxShadow: '0 5px 16px rgba(154, 90, 6, 0.07)',
   },
   noteMetaRow: {
     display: 'flex',
@@ -828,22 +857,24 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontWeight: 800,
   },
   newNoteLabel: {
-    borderRadius: 6,
+    borderRadius: 999,
     padding: '4px 8px',
     background: '#9A5A06',
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 900,
     letterSpacing: '0.05em',
+    textTransform: 'uppercase',
   },
   readLabel: {
-    borderRadius: 6,
+    borderRadius: 999,
     padding: '4px 8px',
     border: '1px solid #D8EAF7',
     background: '#F5FAFE',
     color: '#1F5E91',
     fontSize: 10,
     fontWeight: 900,
+    textTransform: 'uppercase',
   },
   noteTitle: {
     marginTop: 10,
@@ -864,43 +895,44 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     width: '100%',
     minHeight: 46,
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     border: '1px solid #152C4A',
-    background: '#1F3A5F',
+    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
     color: '#FFFFFF',
     padding: '10px 14px',
     fontSize: 14,
-    fontWeight: 800,
-    boxShadow: '0 5px 12px rgba(31, 58, 95, 0.16)',
+    fontWeight: 900,
+    boxShadow: '0 8px 18px rgba(31, 58, 95, 0.20)',
   },
   noCurrentNotes: {
     marginTop: 12,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     border: '1px dashed #CBD5E1',
     background: '#F8FAFC',
     color: '#64748B',
     fontSize: 13,
-    fontWeight: 600,
+    fontWeight: 650,
     lineHeight: 1.45,
   },
   noteHistoryButton: {
     width: '100%',
     minHeight: 46,
     marginTop: 12,
-    borderRadius: 12,
-    border: '1px solid #B9C8D7',
+    borderRadius: 14,
+    border: '1px solid #CBD5E1',
     background: '#FFFFFF',
     color: '#1F3A5F',
     padding: '10px 13px',
     fontSize: 14,
-    fontWeight: 800,
+    fontWeight: 900,
     textAlign: 'left',
+    boxShadow: '0 2px 7px rgba(31, 58, 95, 0.05)',
   },
   noteHistoryList: {
     marginTop: 8,
     padding: '2px 12px',
-    borderRadius: 12,
+    borderRadius: 14,
     border: '1px solid #D8EAF7',
     background: '#F8FBFE',
   },
@@ -926,14 +958,14 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     margin: 0,
     color: '#1F3A5F',
     fontSize: isMobile ? 17 : 19,
-    fontWeight: 800,
+    fontWeight: 900,
     lineHeight: 1.2,
   },
   sectionHint: {
     marginTop: 4,
     color: '#6B7280',
     fontSize: 13,
-    fontWeight: 500,
+    fontWeight: 600,
     lineHeight: 1.4,
   },
   sectionPill: {
@@ -956,10 +988,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
   },
   examCard: {
-    background: '#FFFFFF',
-    border: '1px solid #D6E0EA',
-    borderRadius: 18,
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(207, 230, 246, 0.95)',
+    borderRadius: 20,
     padding: isMobile ? 16 : 18,
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(14px)',
+    WebkitBackdropFilter: 'blur(14px)',
   },
   examScoreRow: {
     marginTop: 14,
@@ -971,7 +1006,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     minWidth: 0,
     background: '#F5FAFE',
     border: '1px solid #D8EAF7',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: '11px 6px',
     textAlign: 'center',
   },
@@ -992,7 +1027,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   noExamResult: {
     marginTop: 14,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     background: '#F8FAFC',
     border: '1px dashed #CBD5E1',
     color: '#64748B',
@@ -1005,19 +1040,20 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     minHeight: 46,
     marginTop: 12,
     background: '#FFFFFF',
-    border: '1px solid #B9C8D7',
-    borderRadius: 12,
+    border: '1px solid #CBD5E1',
+    borderRadius: 14,
     padding: '10px 13px',
     color: '#1F3A5F',
     fontSize: 14,
-    fontWeight: 800,
+    fontWeight: 900,
     textAlign: 'left',
     cursor: 'pointer',
+    boxShadow: '0 2px 7px rgba(31, 58, 95, 0.05)',
   },
   examHistoryList: {
     marginTop: 8,
     padding: '2px 12px',
-    borderRadius: 12,
+    borderRadius: 14,
     background: '#F8FBFE',
     border: '1px solid #D8EAF7',
   },
@@ -1048,10 +1084,14 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   childCard: {
-    background: '#FFFFFF',
-    border: '1px solid #D6E0EA',
-    borderRadius: 18,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.72)',
+    borderRadius: 20,
     padding: isMobile ? 16 : 18,
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.09)',
   },
   childHeader: {
     display: 'flex',
@@ -1101,10 +1141,10 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
 
   metricBox: {
     minWidth: 0,
-    background: '#F7FBFE',
-    border: '1px solid #D8EAF7',
-    borderRadius: 12,
+    background: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 14,
     padding: isMobile ? '12px 7px' : '14px 10px',
+    boxShadow: '0 4px 12px rgba(31, 58, 95, 0.08)',
     textAlign: 'center',
   },
 
