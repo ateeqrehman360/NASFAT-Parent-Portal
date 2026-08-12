@@ -21,6 +21,7 @@ It is designed primarily for phones, since that is how most parents and staff wi
 - Add teacher notes for parents to see.
 - Manage students: add them, edit names and groups, archive students who leave, and restore them later.
 - Manage parent accounts and link one or more students to each parent.
+- Create and edit staff accounts, reset passwords, and archive or restore staff access.
 - Create and rename classes.
 - Mark the Saturday attendance register; unmarked students count as absent from Sunday.
 - Add, edit, and review Quran, Islamic Studies, and Arabic exam results by exam month.
@@ -49,6 +50,7 @@ Student history is kept when a student or parent is archived, so points, notes, 
 | `/admin/classes/[classId]` | Daily class points and teacher notes |
 | `/admin/students` | Student management |
 | `/admin/parents` | Parent account and student-link management |
+| `/admin/staff` | Staff account and access management |
 | `/admin/classes/manage` | Class management |
 | `/admin/attendance` | Saturday attendance register for admins and staff |
 | `/admin/exams` | Exam result entry and history |

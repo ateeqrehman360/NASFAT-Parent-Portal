@@ -11,7 +11,7 @@ type ParsedExamScore = { score: number | null; maxScore: number | null }
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabaseAdmin = () => getSupabaseAdmin()
-const parentArchiveDuration = '876000h'
+const accountArchiveDuration = '876000h'
 
 function cleanUsername(value: unknown) {
   return String(value ?? '').trim().toLowerCase()
@@ -157,6 +157,22 @@ async function getParents() {
   })
 }
 
+async function getStaff() {
+  const { data: staff, error: staffError } = await supabaseAdmin().from('profiles')
+    .select('id, username').eq('role', 'staff').order('username')
+  if (staffError) throw staffError
+  const authStateByStaff = new Map(await Promise.all((staff ?? []).map(async (member) => {
+    const { data, error } = await supabaseAdmin().auth.admin.getUserById(member.id)
+    // A profile without an Auth user cannot sign in, so surface it as archived.
+    return [member.id, !error && authUserIsActive(data.user?.banned_until)] as const
+  })))
+  return (staff ?? []).map((member) => ({
+    id: member.id,
+    username: member.username,
+    active: authStateByStaff.get(member.id) ?? false,
+  }))
+}
+
 async function getExamManagement() {
   const [{ data: students, error: studentError }, { data: classes, error: classError }, { data: results, error: resultError }] = await Promise.all([
     supabaseAdmin().from('students').select('id, first_name, last_name, class_id').eq('active', true).order('first_name').order('last_name'),
@@ -198,6 +214,7 @@ export async function GET(request: NextRequest) {
     if (resource === 'students') return NextResponse.json({ students: await getStudents() })
     if (resource === 'classes') return NextResponse.json({ classes: await getClasses() })
     if (resource === 'parents') return NextResponse.json({ parents: await getParents() })
+    if (resource === 'staff') return NextResponse.json({ staff: await getStaff() })
     if (resource === 'exam-management') return NextResponse.json(await getExamManagement())
     if (resource === 'attendance-management') {
       const classDate = request.nextUrl.searchParams.get('class_date') ?? ''
@@ -328,7 +345,80 @@ export async function POST(request: NextRequest) {
       if (parentError) throw parentError
       if (!parent) return badRequest('Parent account not found.')
       const { error: authError } = await supabaseAdmin().auth.admin.updateUserById(parentId, {
-        ban_duration: active ? 'none' : parentArchiveDuration,
+        ban_duration: active ? 'none' : accountArchiveDuration,
+      })
+      if (authError) throw authError
+      return NextResponse.json({ ok: true })
+    }
+    if (action === 'create-staff') {
+      const username = cleanUsername(body.username)
+      const password = String(body.temporary_password ?? '')
+      if (!/^[a-z0-9._-]{3,40}$/.test(username)) return badRequest('Use 3–40 lowercase letters, numbers, dots, dashes, or underscores for the username.')
+      if (password.length < 8) return badRequest('Temporary password must be at least 8 characters.')
+      const { data: existing, error: existingError } = await supabaseAdmin().from('profiles')
+        .select('id').eq('username', username).maybeSingle()
+      if (existingError) throw existingError
+      if (existing) return badRequest('That username is already in use.')
+
+      const email = `${username}@staff.nasfat-manchester.internal`
+      const { data: created, error: createError } = await supabaseAdmin().auth.admin.createUser({ email, password, email_confirm: true })
+      if (createError || !created.user) throw createError ?? new Error('Auth user was not created.')
+      try {
+        const { error: profileError } = await supabaseAdmin().from('profiles')
+          .upsert({ id: created.user.id, username, email, role: 'staff' }, { onConflict: 'id' })
+        if (profileError) throw profileError
+      } catch (error) {
+        const { error: rollbackError } = await supabaseAdmin().auth.admin.deleteUser(created.user.id)
+        if (rollbackError) console.error('Staff Auth rollback failed', rollbackError)
+        throw error
+      }
+      return NextResponse.json({ ok: true })
+    }
+    if (action === 'update-staff') {
+      const staffId = String(body.staff_id ?? '')
+      const username = cleanUsername(body.username)
+      const newPassword = String(body.new_password ?? '')
+      if (!staffId) return badRequest('Staff account not found.')
+      if (!/^[a-z0-9._-]{3,40}$/.test(username)) return badRequest('Use 3–40 lowercase letters, numbers, dots, dashes, or underscores for the username.')
+      if (newPassword && newPassword.length < 8) return badRequest('New password must be at least 8 characters.')
+
+      const [{ data: staff, error: staffError }, { data: conflict, error: conflictError }] = await Promise.all([
+        supabaseAdmin().from('profiles').select('id, username').eq('id', staffId).eq('role', 'staff').maybeSingle(),
+        supabaseAdmin().from('profiles').select('id').eq('username', username).neq('id', staffId).maybeSingle(),
+      ])
+      if (staffError) throw staffError
+      if (conflictError) throw conflictError
+      if (!staff) return badRequest('Staff account not found.')
+      if (conflict) return badRequest('That username is already in use.')
+
+      const usernameChanged = staff.username !== username
+      if (usernameChanged) {
+        const { error: profileError } = await supabaseAdmin().from('profiles')
+          .update({ username }).eq('id', staffId).eq('role', 'staff')
+        if (profileError) throw profileError
+      }
+      if (newPassword) {
+        const { error: authError } = await supabaseAdmin().auth.admin.updateUserById(staffId, { password: newPassword })
+        if (authError) {
+          if (usernameChanged) {
+            const { error: rollbackError } = await supabaseAdmin().from('profiles')
+              .update({ username: staff.username }).eq('id', staffId).eq('role', 'staff')
+            if (rollbackError) console.error('Staff username rollback failed', rollbackError)
+          }
+          throw authError
+        }
+      }
+      return NextResponse.json({ ok: true })
+    }
+    if (action === 'set-staff-active') {
+      const staffId = String(body.staff_id ?? '')
+      const active = Boolean(body.active)
+      const { data: staff, error: staffError } = await supabaseAdmin().from('profiles')
+        .select('id').eq('id', staffId).eq('role', 'staff').maybeSingle()
+      if (staffError) throw staffError
+      if (!staff) return badRequest('Staff account not found.')
+      const { error: authError } = await supabaseAdmin().auth.admin.updateUserById(staffId, {
+        ban_duration: active ? 'none' : accountArchiveDuration,
       })
       if (authError) throw authError
       return NextResponse.json({ ok: true })

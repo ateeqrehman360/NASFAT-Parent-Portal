@@ -157,10 +157,11 @@ export default function AdminPage() {
             <section className="nasfat-surface nasfat-enter" style={{ ...S.card, ...S.managementCard }} aria-labelledby="management-heading">
               <div style={S.sectionKicker}>Management</div>
               <h2 id="management-heading" style={S.cardTitle}>Madrasa records</h2>
-              <div data-body="true" style={S.cardHint}>Students, family access, groups, attendance, and exam results.</div>
+              <div data-body="true" style={S.cardHint}>Students, family and staff access, groups, attendance, and exam results.</div>
               <div style={S.classGrid}>
                 <ManagementLink badge="ST" label="Students" description="Names, classes & archive" onClick={() => router.push('/admin/students')} style={S} />
                 <ManagementLink badge="PA" label="Parents" description="Accounts & student links" onClick={() => router.push('/admin/parents')} style={S} />
+                <ManagementLink badge="SF" label="Staff" description="Accounts & access" onClick={() => router.push('/admin/staff')} style={S} />
                 <ManagementLink badge="CL" label="Classes" description="Create & rename groups" onClick={() => router.push('/admin/classes/manage')} style={S} />
                 <ManagementLink badge="AT" label="Attendance" description="Saturday class register" onClick={() => router.push('/admin/attendance')} style={S} />
                 <ManagementLink badge="EX" label="Exam results" description="Enter & update scores" onClick={() => router.push('/admin/exams')} style={S} />
