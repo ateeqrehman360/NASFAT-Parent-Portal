@@ -125,7 +125,7 @@ export default function LoginPage() {
     }
 
     if (profile?.role === 'admin') router.push('/admin')
-    else if (profile?.role === 'staff') router.push('/admin/exams')
+    else if (profile?.role === 'staff') router.push('/staff')
     else if (profile?.role === 'parent') router.push('/parent')
     else setMsg('Account role not set. Please contact the madrasah admin.')
   }

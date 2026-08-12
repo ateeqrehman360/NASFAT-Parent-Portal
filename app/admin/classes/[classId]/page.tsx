@@ -25,6 +25,8 @@ type StudentNote = {
   created_at: string
 }
 
+type EditorRole = 'admin' | 'staff'
+
 export default function ClassPage() {
   const { classId } = useParams<{ classId: string }>()
   const router = useRouter()
@@ -39,6 +41,7 @@ export default function ClassPage() {
   const [noteStatus, setNoteStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({})
 
   const [className, setClassName] = useState('Class')
+  const [role, setRole] = useState<EditorRole | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
@@ -71,11 +74,11 @@ export default function ClassPage() {
         .select('role')
         .eq('id', user.id)
         .single()
-      if (profileError || profile?.role !== 'admin') {
-        await supabase.auth.signOut()
+      if (profileError || (profile?.role !== 'admin' && profile?.role !== 'staff')) {
         router.replace('/login')
         return
       }
+      setRole(profile.role)
 
       const [{ data: classData }, { data: studentData, error }] = await Promise.all([
         supabase.from('classes').select('name').eq('id', classId).maybeSingle(),
@@ -190,7 +193,7 @@ return (
     <div style={S.content}>
       <header className="nasfat-surface nasfat-enter" style={S.header}>
         <div style={S.headerLeft}>
-          <button className="nasfat-button" type="button" onClick={() => router.push('/admin')} style={S.backBtn}>
+          <button className="nasfat-button" type="button" onClick={() => router.push(role === 'staff' ? '/staff' : '/admin')} style={S.backBtn}>
             ← Back
           </button>
 

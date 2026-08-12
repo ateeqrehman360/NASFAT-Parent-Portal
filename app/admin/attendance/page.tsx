@@ -201,7 +201,7 @@ export default function AttendanceManagementPage() {
       <div style={ui.headerActions}>
         {role === 'admin'
           ? <button className="nasfat-button" type="button" onClick={() => router.push('/admin')} style={ui.button}>← Admin</button>
-          : <button className="nasfat-button" type="button" onClick={signOut} style={ui.button}>Log out</button>}
+          : <><button className="nasfat-button" type="button" onClick={() => router.push('/staff')} style={ui.button}>← Points</button><button className="nasfat-button" type="button" onClick={signOut} style={ui.button}>Log out</button></>}
         <button className="nasfat-button" type="button" onClick={() => router.push('/admin/exams')} style={ui.button}>Exam results</button>
         <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={46} height={46} priority style={ui.logo} />
       </div>

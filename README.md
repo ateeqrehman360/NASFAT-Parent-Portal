@@ -47,7 +47,8 @@ Student history is kept when a student or parent is archived, so points, notes, 
 | `/login` | Username and password sign-in |
 | `/parent` | Parent view of linked students, points, and exam results |
 | `/admin` | Admin dashboard, class point logging, and management links |
-| `/admin/classes/[classId]` | Daily class points and teacher notes |
+| `/staff` | Staff dashboard with points first, plus attendance and exam links |
+| `/admin/classes/[classId]` | Daily class points and teacher notes for admins and staff |
 | `/admin/students` | Student management |
 | `/admin/parents` | Parent account and student-link management |
 | `/admin/staff` | Staff account and access management |
