@@ -138,11 +138,12 @@ export default function AdminPage() {
 
             <div style={{ ...S.card, ...S.managementCard }}>
               <div style={S.cardTitle}>Management</div>
-              <div style={S.cardHint}>Manage students, parent accounts, and classes.</div>
+              <div style={S.cardHint}>Manage students, parent accounts, classes, and exam results.</div>
               <div style={S.classGrid}>
                 <button onClick={() => router.push('/admin/students')} style={S.classRow}><span style={{ fontWeight: 900 }}>Students</span><span style={S.chev}>→</span></button>
                 <button onClick={() => router.push('/admin/parents')} style={S.classRow}><span style={{ fontWeight: 900 }}>Parents</span><span style={S.chev}>→</span></button>
                 <button onClick={() => router.push('/admin/classes/manage')} style={S.classRow}><span style={{ fontWeight: 900 }}>Classes</span><span style={S.chev}>→</span></button>
+                <button onClick={() => router.push('/admin/exams')} style={S.classRow}><span style={{ fontWeight: 900 }}>Exam results</span><span style={S.chev}>→</span></button>
               </div>
             </div>
           </>

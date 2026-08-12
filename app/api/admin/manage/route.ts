@@ -4,7 +4,8 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'nodejs'
 
-type StudentInput = { first_name: string; last_name?: string | null; class_id: string }
+type StudentInput = { first_name: string; last_name?: string | null; class_id?: string | null }
+type ParsedExamScore = { score: number | null; maxScore: number | null }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -25,7 +26,7 @@ function authUserIsActive(bannedUntil: string | null | undefined) {
   return !Number.isNaN(timestamp) && timestamp <= Date.now()
 }
 
-async function requireAdmin(request: NextRequest) {
+async function requireRole(request: NextRequest, allowedRoles: string[]) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
   if (!token) return null
   const authClient = createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -36,10 +37,32 @@ async function requireAdmin(request: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   })
   const { data: profile } = await userClient.from('profiles').select('role').eq('id', authData.user.id).single()
-  return profile?.role === 'admin' ? authData.user : null
+  return profile && allowedRoles.includes(profile.role) ? authData.user : null
 }
 
+function requireAdmin(request: NextRequest) { return requireRole(request, ['admin']) }
+function requireExamEditor(request: NextRequest) { return requireRole(request, ['admin', 'staff']) }
+
 function badRequest(message: string) { return NextResponse.json({ error: message }, { status: 400 }) }
+
+function readScore(value: unknown): ParsedExamScore | undefined {
+  const raw = String(value ?? '').trim()
+  if (!raw) return { score: null, maxScore: null }
+  const parts = raw.replace(/\s/g, '').split('/')
+  if (parts.length > 2 || !parts[0] || (parts.length === 2 && !parts[1])) return undefined
+  const score = Number(parts[0])
+  const maxScore = parts.length === 2 ? Number(parts[1]) : null
+  if (!Number.isFinite(score) || score < 0 || (maxScore !== null && (!Number.isFinite(maxScore) || maxScore <= 0 || score > maxScore))) return undefined
+  return { score, maxScore }
+}
+
+function normalizeExamMonth(value: string) {
+  const match = /^(\d{4})-(\d{2})(?:-\d{2})?$/.exec(value)
+  if (!match) return null
+  const normalized = `${match[1]}-${match[2]}-01`
+  const date = new Date(`${normalized}T00:00:00.000Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === normalized ? normalized : null
+}
 
 async function getStudents() {
   const { data, error } = await supabaseAdmin().from('students')
@@ -91,6 +114,22 @@ async function getParents() {
   })
 }
 
+async function getExamManagement() {
+  const [{ data: students, error: studentError }, { data: classes, error: classError }, { data: results, error: resultError }] = await Promise.all([
+    supabaseAdmin().from('students').select('id, first_name, last_name, class_id').eq('active', true).order('first_name').order('last_name'),
+    supabaseAdmin().from('classes').select('id, name').order('name'),
+    supabaseAdmin().from('exam_results').select('id, student_id, exam_date, quran_score, quran_max_score, islamic_studies_score, islamic_studies_max_score, arabic_score, arabic_max_score, created_at, updated_at').order('exam_date', { ascending: false }).order('updated_at', { ascending: false }),
+  ])
+  if (studentError) throw studentError
+  if (classError) throw classError
+  if (resultError) throw resultError
+  const classNames = new Map((classes ?? []).map((item) => [item.id, item.name]))
+  return {
+    students: (students ?? []).map((student) => ({ ...student, class_name: classNames.get(student.class_id) ?? 'No class' })),
+    results: results ?? [],
+  }
+}
+
 async function replaceParentStudents(parentId: string, studentIds: string[]) {
   const uniqueIds = [...new Set(studentIds)]
   const { data: existing, error: existingError } = await supabaseAdmin().from('parent_student')
@@ -108,12 +147,14 @@ async function replaceParentStudents(parentId: string, studentIds: string[]) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await requireAdmin(request))) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 })
   try {
     const resource = request.nextUrl.searchParams.get('resource')
+    const user = resource === 'exam-management' ? await requireExamEditor(request) : await requireAdmin(request)
+    if (!user) return NextResponse.json({ error: resource === 'exam-management' ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
     if (resource === 'students') return NextResponse.json({ students: await getStudents() })
     if (resource === 'classes') return NextResponse.json({ classes: await getClasses() })
     if (resource === 'parents') return NextResponse.json({ parents: await getParents() })
+    if (resource === 'exam-management') return NextResponse.json(await getExamManagement())
     if (resource === 'parent-form') {
       const [{ data: students, error: studentError }, classes] = await Promise.all([
         supabaseAdmin().from('students').select('id, first_name, last_name, class_id, active').order('first_name'), getClasses(),
@@ -129,16 +170,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await requireAdmin(request))) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 })
   try {
     const body = await request.json()
     const action = body.action as string
+    const user = action === 'upsert-exam-result' ? await requireExamEditor(request) : await requireAdmin(request)
+    if (!user) return NextResponse.json({ error: action === 'upsert-exam-result' ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
     if (action === 'create-student' || action === 'update-student') {
       const input: StudentInput = body.student
       const first_name = String(input?.first_name ?? '').trim()
       const last_name = String(input?.last_name ?? '').trim() || null
-      const class_id = String(input?.class_id ?? '')
-      if (!first_name || !class_id) return badRequest('First name and class are required.')
+      const class_id = String(input?.class_id ?? '').trim() || null
+      if (!first_name) return badRequest('First name is required.')
       const payload = { first_name, last_name, class_id }
       const query = action === 'create-student'
         ? supabaseAdmin().from('students').insert({ ...payload, active: true })
@@ -219,6 +261,64 @@ export async function POST(request: NextRequest) {
         ban_duration: active ? 'none' : parentArchiveDuration,
       })
       if (authError) throw authError
+      return NextResponse.json({ ok: true })
+    }
+    if (action === 'upsert-exam-result') {
+      const studentId = String(body.student_id ?? '')
+      const rawExamMonth = String(body.exam_month ?? body.exam_date ?? '').trim()
+      const examDate = normalizeExamMonth(rawExamMonth)
+      const resultId = String(body.result_id ?? '').trim()
+      const scores = [readScore(body.quran_score), readScore(body.islamic_studies_score), readScore(body.arabic_score)]
+      if (!studentId || !examDate) return badRequest('Choose a student and exam month.')
+      if (scores.some((score) => score === undefined)) return badRequest('Scores must be marks of zero or more, optionally written like 35/40.')
+      if (scores.every((score) => score?.score === null)) return badRequest('Enter at least one subject score.')
+      const { data: student, error: studentError } = await supabaseAdmin().from('students')
+        .select('id').eq('id', studentId).eq('active', true).maybeSingle()
+      if (studentError) throw studentError
+      if (!student) return badRequest('Choose an active student.')
+      const [quran, islamicStudies, arabic] = scores as ParsedExamScore[]
+      const payload = {
+        student_id: studentId,
+        exam_date: examDate,
+        assessment_name: null,
+        quran_score: quran.score,
+        quran_max_score: quran.maxScore,
+        islamic_studies_score: islamicStudies.score,
+        islamic_studies_max_score: islamicStudies.maxScore,
+        arabic_score: arabic.score,
+        arabic_max_score: arabic.maxScore,
+        entered_by: user.id,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (resultId) {
+        const { data: collision, error: collisionError } = await supabaseAdmin().from('exam_results').select('id')
+          .eq('student_id', studentId).eq('exam_date', examDate).neq('id', resultId).maybeSingle()
+        if (collisionError) throw collisionError
+        if (collision) return badRequest('That student already has results for this exam month. Edit the existing month instead.')
+        const { data: updated, error } = await supabaseAdmin().from('exam_results').update(payload)
+          .eq('id', resultId).eq('student_id', studentId).select('id').maybeSingle()
+        if (error) throw error
+        if (!updated) return badRequest('Exam result not found.')
+      } else {
+        const { data: existing, error: existingError } = await supabaseAdmin().from('exam_results')
+          .select('id, quran_score, quran_max_score, islamic_studies_score, islamic_studies_max_score, arabic_score, arabic_max_score')
+          .eq('student_id', studentId).eq('exam_date', examDate).maybeSingle()
+        if (existingError) throw existingError
+        const mergedPayload = existing ? {
+          ...payload,
+          quran_score: quran.score ?? existing.quran_score,
+          quran_max_score: quran.score === null ? existing.quran_max_score : quran.maxScore,
+          islamic_studies_score: islamicStudies.score ?? existing.islamic_studies_score,
+          islamic_studies_max_score: islamicStudies.score === null ? existing.islamic_studies_max_score : islamicStudies.maxScore,
+          arabic_score: arabic.score ?? existing.arabic_score,
+          arabic_max_score: arabic.score === null ? existing.arabic_max_score : arabic.maxScore,
+        } : payload
+        const { error } = existing
+          ? await supabaseAdmin().from('exam_results').update(mergedPayload).eq('id', existing.id)
+          : await supabaseAdmin().from('exam_results').insert(mergedPayload)
+        if (error) throw error
+      }
       return NextResponse.json({ ok: true })
     }
     return badRequest('Unknown management action.')

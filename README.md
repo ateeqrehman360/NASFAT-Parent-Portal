@@ -47,3 +47,18 @@ Management requests are handled by `/api/admin/manage`. The route validates the 
 New parent accounts use `username@parent.nasfat-manchester.internal` solely as the internal Supabase Auth email. Parents continue to log in with their username and password.
 
 Parent archiving is reversible and does not delete profiles, relationships, or history. The management route uses Supabase Auth's server-only `ban_duration` setting to block an archived parent from signing in, and removes that ban when the account is restored. Existing RLS policies are not changed.
+
+## Exam results setup
+
+Run these in order in the Supabase SQL editor before using exam results:
+
+1. [`supabase/migrations/20260812_exam_results.sql`](./supabase/migrations/20260812_exam_results.sql) creates the new `exam_results` table for Quran, Islamic Studies, and Arabic, with one result per student and exam date.
+2. [`supabase/migrations/20260812_exam_result_score_totals.sql`](./supabase/migrations/20260812_exam_result_score_totals.sql) adds optional maximum marks so results can be displayed as, for example, `35/40`.
+3. [`supabase/migrations/20260812_exam_result_historic_assessments.sql`](./supabase/migrations/20260812_exam_result_historic_assessments.sql) allows a labelled historic result when the original exam date is unknown, without changing dated-result history.
+4. [`supabase/migrations/20260812_exam_result_month_cycles.sql`](./supabase/migrations/20260812_exam_result_month_cycles.sql) consolidates results into one row per student and exam month. Existing supplied results are assigned to July 2026, and future dates are stored as the first day of their month internally.
+
+- Parents can read only results for students linked to their own account through `parent_student`.
+- Browser clients have read-only access to the table; writes go through `/api/admin/manage` after the server verifies that the signed-in profile has the `admin` or `staff` role.
+- Admins open **Exam results** from `/admin`; a `staff` profile is routed directly to `/admin/exams` after logging in.
+
+In the entry form, select the exam month and write a result as `35/40` to retain the mark and its total, or just `35` when there is no fixed maximum. Saving another subject for the same student and month adds it to that month without erasing existing subjects. A later exam month appears as a separate history entry.
