@@ -4,6 +4,17 @@
   color-scheme: light;
   --background: #f5f7fa;
   --foreground: #111827;
+  --nasfat-navy: #1f3a5f;
+  --nasfat-navy-deep: #152c4a;
+  --nasfat-blue: #eaf4fb;
+  --nasfat-blue-strong: #cfe6f6;
+  --nasfat-surface: rgba(255, 255, 255, 0.94);
+  --nasfat-border: rgba(203, 213, 225, 0.78);
+  --nasfat-muted: #64748b;
+  --nasfat-shadow-sm: 0 2px 8px rgba(31, 58, 95, 0.06);
+  --nasfat-shadow-md: 0 14px 38px rgba(31, 58, 95, 0.11);
+  --nasfat-shadow-lg: 0 24px 70px rgba(31, 58, 95, 0.15);
+  --nasfat-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -13,8 +24,276 @@
   --font-mono: var(--font-geist-mono);
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
+  min-height: 100dvh;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #cfe6f6;
+  color: #152c4a;
+}
+
+.nasfat-app {
+  isolation: isolate;
+  min-height: 100dvh;
+}
+
+.nasfat-app::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    radial-gradient(circle at 92% 4%, rgba(102, 180, 221, 0.17), transparent 26rem),
+    radial-gradient(circle at 2% 96%, rgba(31, 58, 95, 0.07), transparent 24rem);
+}
+
+.nasfat-app h1,
+.nasfat-app h2,
+.nasfat-app h3,
+.nasfat-app [data-heading="true"] {
+  text-wrap: balance;
+}
+
+.nasfat-app p,
+.nasfat-app [data-body="true"] {
+  text-wrap: pretty;
+}
+
+.nasfat-app button,
+.nasfat-app a,
+.nasfat-app input,
+.nasfat-app select,
+.nasfat-app textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: var(--nasfat-ease);
+}
+
+.nasfat-app button,
+.nasfat-app a {
+  touch-action: manipulation;
+}
+
+.nasfat-app button:not(:disabled),
+.nasfat-app a[href] {
+  cursor: pointer;
+}
+
+.nasfat-app button:disabled {
+  cursor: not-allowed;
+}
+
+.nasfat-app button:focus-visible,
+.nasfat-app a:focus-visible,
+.nasfat-app input:focus-visible,
+.nasfat-app select:focus-visible,
+.nasfat-app textarea:focus-visible {
+  outline: 3px solid rgba(78, 153, 198, 0.32);
+  outline-offset: 2px;
+  border-color: #4e99c6 !important;
+  box-shadow: 0 0 0 4px rgba(78, 153, 198, 0.12);
+}
+
+.nasfat-app input:focus,
+.nasfat-app select:focus,
+.nasfat-app textarea:focus {
+  background: #ffffff !important;
+}
+
+.nasfat-app button:not(:disabled):active,
+.nasfat-app a[href]:active {
+  transform: scale(0.96);
+}
+
+.nasfat-surface {
+  box-shadow: var(--nasfat-shadow-md);
+}
+
+.nasfat-button {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  overflow: hidden;
+}
+
+.nasfat-tile,
+.nasfat-row {
+  transform: translateZ(0);
+  transition-property: transform, box-shadow, border-color, background-color;
+  transition-duration: 200ms;
+  transition-timing-function: var(--nasfat-ease);
+}
+
+.nasfat-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.nasfat-enter,
+.nasfat-stagger {
+  animation: nasfat-rise 520ms var(--nasfat-ease) both;
+  animation-delay: var(--nasfat-delay, 0ms);
+}
+
+.nasfat-stagger:nth-child(2) { --nasfat-delay: 55ms; }
+.nasfat-stagger:nth-child(3) { --nasfat-delay: 110ms; }
+.nasfat-stagger:nth-child(4) { --nasfat-delay: 165ms; }
+.nasfat-stagger:nth-child(5) { --nasfat-delay: 220ms; }
+.nasfat-stagger:nth-child(6) { --nasfat-delay: 275ms; }
+.nasfat-stagger:nth-child(n + 7) { --nasfat-delay: 320ms; }
+
+.nasfat-status {
+  animation: nasfat-status-in 280ms var(--nasfat-ease) both;
+}
+
+.nasfat-expand {
+  transform-origin: top center;
+  animation: nasfat-expand-in 260ms var(--nasfat-ease) both;
+}
+
+.nasfat-logo {
+  filter: drop-shadow(0 8px 16px rgba(31, 58, 95, 0.12));
+  animation: nasfat-logo-in 650ms var(--nasfat-ease) both;
+}
+
+.nasfat-spinner {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: nasfat-spin 700ms linear infinite;
+}
+
+.nasfat-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #e8eef4;
+  color: transparent !important;
+}
+
+.nasfat-skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.74), transparent);
+  animation: nasfat-shimmer 1.35s ease-in-out infinite;
+}
+
+.nasfat-score-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px 10px;
+  margin-top: 2px;
+}
+
+.nasfat-score-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@keyframes nasfat-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nasfat-status-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nasfat-expand-in {
+  from { opacity: 0; transform: translateY(-5px) scaleY(0.98); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+@keyframes nasfat-logo-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nasfat-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nasfat-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nasfat-app button:not(:disabled):hover,
+  .nasfat-app a[href]:hover {
+    filter: brightness(0.985);
+  }
+
+  .nasfat-tile:hover,
+  .nasfat-row:hover {
+    transform: translateY(-2px);
+    border-color: rgba(78, 153, 198, 0.5) !important;
+    box-shadow: 0 12px 30px rgba(31, 58, 95, 0.12) !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .nasfat-score-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .nasfat-full-button-mobile {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  .nasfat-app *,
+  .nasfat-app *::before,
+  .nasfat-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

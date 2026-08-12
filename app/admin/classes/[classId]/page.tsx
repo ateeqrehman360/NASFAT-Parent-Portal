@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -35,14 +36,21 @@ export default function ClassPage() {
   const [notesByStudent, setNotesByStudent] = useState<Record<string, StudentNote[]>>({})
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
   const [newNote, setNewNote] = useState<Record<string, string>>({})
-  const [noteStatus, setNoteStatus] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({})
+  const [noteStatus, setNoteStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({})
 
+  const [className, setClassName] = useState('Class')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
   const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const todayLabel = useMemo(() => new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date()), [])
 
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth < 640)
@@ -69,12 +77,17 @@ export default function ClassPage() {
         return
       }
 
-      const { data: studentData, error } = await supabase
-        .from('students')
-        .select('id, first_name, last_name')
-        .eq('class_id', classId)
-        .eq('active', true)
-        .order('first_name')
+      const [{ data: classData }, { data: studentData, error }] = await Promise.all([
+        supabase.from('classes').select('name').eq('id', classId).maybeSingle(),
+        supabase
+          .from('students')
+          .select('id, first_name, last_name')
+          .eq('class_id', classId)
+          .eq('active', true)
+          .order('first_name'),
+      ])
+
+      setClassName(classData?.name ?? 'Class')
 
       if (error) {
         console.error(error)
@@ -144,64 +157,80 @@ export default function ClassPage() {
     setSaving(false)
 
     if (error) {
-      setSaveMsg('❌ Save failed')
+      setSaveMsg('Could not save today’s points. Please try again.')
       return
     }
 
-    setSaveMsg('✅ Saved for today')
+    setSaveMsg('Points saved for today.')
   }
+
+  const S = styles(isMobile)
 
   if (loading) {
     return (
-      <main>
-        <div>Loading…</div>
+      <main className="nasfat-app" style={S.page}>
+        <div style={S.content}>
+          <div className="nasfat-surface nasfat-enter" style={S.header}>
+            <div className="nasfat-skeleton" style={{ width: 185, height: 44 }}>Loading class</div>
+            <div className="nasfat-skeleton" style={{ width: 44, height: 44, borderRadius: 14 }}>Loading</div>
+          </div>
+          <div className="nasfat-surface nasfat-enter" style={S.stickyBar}>
+            <div className="nasfat-skeleton" style={{ width: 165, height: 40 }}>Loading date</div>
+            <div className="nasfat-skeleton" style={{ width: isMobile ? '100%' : 120, height: 48 }}>Loading</div>
+          </div>
+          {[0, 1, 2].map((item) => <div className="nasfat-skeleton" key={item} style={{ height: 92, marginTop: 10 }}>Loading student</div>)}
+        </div>
       </main>
     )
   }
 
- const S = styles(isMobile)
-
 
 return (
-  <main style={S.page}>
+  <main className="nasfat-app" style={S.page}>
     <div style={S.content}>
-      <div style={S.header}>
+      <header className="nasfat-surface nasfat-enter" style={S.header}>
         <div style={S.headerLeft}>
-          <button onClick={() => router.push('/admin')} style={S.backBtn}>
+          <button className="nasfat-button" type="button" onClick={() => router.push('/admin')} style={S.backBtn}>
             ← Back
           </button>
 
           <div style={{ minWidth: 0 }}>
-            <div style={S.headerTitle}>Class</div>
-            <div style={S.headerSub}>Log points for today</div>
+            <div style={S.eyebrow}>Points register</div>
+            <h1 data-heading="true" style={S.headerTitle}>{className}</h1>
+            <div style={S.headerSub}>{students.length} active {students.length === 1 ? 'student' : 'students'}</div>
           </div>
         </div>
 
-        <img
+        <Image
+          className="nasfat-logo"
           src="/nasfat-logo.png"
           alt="NASFAT Manchester"
+          width={44}
+          height={44}
           style={S.headerLogo}
         />
-      </div>
+      </header>
 
-      <div style={S.stickyBar}>
+      <section className="nasfat-surface nasfat-enter" style={S.stickyBar} aria-label="Save today's points">
         <div>
           <div style={S.mutedLabel}>Today</div>
-          <div style={S.todayBig}>{todayISO}</div>
-          {saveMsg && <div style={S.saveMsg}>{saveMsg}</div>}
+          <div className="nasfat-number" style={S.todayBig}>{todayLabel}</div>
+          {saveMsg && <div className="nasfat-status" role="status" style={{ ...S.saveMsg, ...(saveMsg.startsWith('Could not') ? S.saveMsgError : {}) }}>{saveMsg}</div>}
         </div>
 
         <button
+          className="nasfat-button"
+          type="button"
           onClick={handleSaveToday}
           disabled={saving}
           style={S.saveBtn}
         >
-          {saving ? 'Saving…' : 'Save today'}
+          {saving ? <><span className="nasfat-spinner" aria-hidden="true" />Saving…</> : 'Save today'}
         </button>
-      </div>
+      </section>
 
       {students.length === 0 ? (
-        <div style={S.card}>No students in this class.</div>
+        <div className="nasfat-surface nasfat-enter" style={S.card}>No active students are assigned to this class yet.</div>
       ) : (
         <div style={S.grid}>
           {students.map((s) => {
@@ -211,41 +240,41 @@ return (
             const status = noteStatus[s.id] ?? 'idle'
 
             return (
-              <div key={s.id} style={S.studentRow}>
+              <article className="nasfat-row nasfat-stagger" key={s.id} style={S.studentRow}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={S.studentName}>{name}</div>
-                  <div style={S.studentMeta}>
+                  <div className="nasfat-number" style={S.studentMeta}>
                     Total: {totals[s.id] ?? 0}
                   </div>
 
-                  {/* Notes toggle */}
                   {!isOpen && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        fontWeight: 800,
-                        color: notes.length > 0 ? '#B45309' : '#2563EB',
-                        cursor: 'pointer',
-                      }}
+                    <button
+                      className="nasfat-button"
+                      type="button"
+                      aria-expanded={false}
+                      style={{ ...S.noteToggle, color: notes.length > 0 ? '#9A5A06' : '#1F5E91' }}
                       onClick={() =>
                         setOpenNotes((o) => ({ ...o, [s.id]: true }))
                       }
                     >
-                      {notes.length > 0 ? '🔔 View teacher notes' : '➕ Add a note'}
-                    </div>
+                      {notes.length > 0 ? `View teacher notes (${notes.length})` : 'Add a teacher note'}
+                    </button>
                   )}
 
                   {isOpen && (
-                    <div style={{ marginTop: 10 }}>
+                    <div className="nasfat-expand" style={S.notesPanel}>
+                      <div style={S.notesHeader}>
+                        <div style={S.notesTitle}>Teacher notes</div>
+                        <button className="nasfat-button" type="button" aria-expanded={true} onClick={() => setOpenNotes((current) => ({ ...current, [s.id]: false }))} style={S.noteClose}>Hide</button>
+                      </div>
                       {notes.map((n) => (
                         <div
                           key={n.id}
                           style={{
                             background: 'rgba(255,255,255,0.85)',
                             border: '1px solid rgba(229,231,235,0.7)',
-                            borderRadius: 12,
-                            padding: 10,
+                            borderRadius: 13,
+                            padding: 11,
                             marginBottom: 8,
                           }}
                         >
@@ -265,6 +294,9 @@ return (
                      ))}
 
                       <textarea
+                        id={`student-note-${s.id}`}
+                        name="student_note"
+                        aria-label={`Add a teacher note for ${name}`}
                         placeholder="Add a note for parents…"
                         value={newNote[s.id] ?? ''}
                         onChange={(e) =>
@@ -275,6 +307,7 @@ return (
                         }
                         style={{
                           width: '100%',
+                          minHeight: 90,
                           marginTop: 8,
                           padding: 10,
                           borderRadius: 10,
@@ -282,12 +315,14 @@ return (
                           fontSize: 13,
                           background: '#FFFFFF',
                           color: '#111827',
-                          outline: 'none',
+                          resize: 'vertical',
                         }}
                       />
 
 
                       <button
+                        className="nasfat-button"
+                        type="button"
                         disabled={status === 'saving'}
                         style={{
                           marginTop: 6,
@@ -295,8 +330,7 @@ return (
                           borderRadius: 10,
                           border: '1px solid rgba(209,213,219,1)',
                           background:
-                            status === 'saved' ? '#16a34a' : '#1F3A5F',
-                          transition: 'background 0.2s ease',
+                            status === 'saved' ? '#16834C' : status === 'error' ? '#B91C1C' : '#1F3A5F',
                           color: '#FFFFFF',
                           fontWeight: 800,
                           cursor: status === 'saving' ? 'default' : 'pointer',
@@ -320,8 +354,7 @@ return (
 
                           if (error) {
                             console.error('Note insert error:', error)
-                            alert('Failed to add note. Check console.')
-                            setNoteStatus((n) => ({ ...n, [s.id]: 'idle' }))
+                            setNoteStatus((n) => ({ ...n, [s.id]: 'error' }))
                             return
                           }
 
@@ -335,18 +368,24 @@ return (
                         }}
                       >
                         {status === 'saving'
-                          ? 'Saving…'
+                          ? <><span className="nasfat-spinner" aria-hidden="true" />Saving…</>
                           : status === 'saved'
-                          ? 'Added ✓'
+                          ? 'Note added'
+                          : status === 'error'
+                          ? 'Try again'
                           : 'Add note'
                           }
                       </button>
+                      {status === 'error' && <div className="nasfat-status" role="alert" style={S.noteError}>The note could not be added. Please try again.</div>}
                     </div>
                   )}
                 </div>
 
                 <div style={S.controls}>
                   <button
+                    className="nasfat-button"
+                    type="button"
+                    aria-label={`Remove one point from ${name}`}
                     style={S.ctrlBtn}
                     onClick={() =>
                       setPoints((p) => ({
@@ -358,9 +397,12 @@ return (
                     –
                   </button>
 
-                  <div style={S.valuePill}>{points[s.id] ?? 0}</div>
+                  <div className="nasfat-number" aria-live="polite" aria-label={`${points[s.id] ?? 0} points`} style={S.valuePill}>{points[s.id] ?? 0}</div>
 
                   <button
+                    className="nasfat-button"
+                    type="button"
+                    aria-label={`Add one point to ${name}`}
                     style={S.ctrlBtn}
                     onClick={() =>
                       setPoints((p) => ({
@@ -372,7 +414,7 @@ return (
                     +
                   </button>
                 </div>
-              </div>
+              </article>
             )
           })}
         </div>
@@ -385,10 +427,10 @@ return (
 const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   page: {
     position: 'relative',
-    minHeight: '100vh',
+    minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
     color: '#111827',
-    overflow: 'hidden',
+    overflowX: 'hidden',
   },
 
   headerLeft: {
@@ -408,24 +450,26 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   content: {
     position: 'relative',
     zIndex: 1,
-    padding: isMobile ? 14 : 24,
+    width: '100%',
+    maxWidth: 860,
+    margin: '0 auto',
+    padding: isMobile ? '12px 12px max(42px, env(safe-area-inset-bottom))' : '24px 24px 48px',
   },
 
-  // HEADER: slightly translucent but still readable
   header: {
-    background: 'rgba(255, 255, 255, 0.90)',
-    border: '1px solid rgba(229, 231, 235, 0.75)',
-    borderRadius: 16,
-    padding: isMobile ? 14 : 16,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 22 : 26,
+    padding: isMobile ? 14 : 18,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
-  // Buttons should be SOLID (no "disabled" look)
   backBtn: {
     background: '#FFFFFF',
     border: '1px solid rgba(209, 213, 219, 1)',
@@ -437,9 +481,22 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   headerTitle: {
-    fontSize: 18,
+    margin: 0,
+    fontSize: isMobile ? 19 : 23,
     fontWeight: 900,
     color: '#1F3A5F',
+    lineHeight: 1.08,
+    letterSpacing: '-0.02em',
+  },
+
+  eyebrow: {
+    marginBottom: 5,
+    color: '#4E83A5',
+    fontSize: 9,
+    fontWeight: 900,
+    lineHeight: 1,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 
   headerSub: {
@@ -449,20 +506,23 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontWeight: 700,
   },
 
-  // Sticky bar can stay a bit more opaque (info section)
   stickyBar: {
+    position: 'sticky',
+    zIndex: 4,
+    top: 10,
     marginTop: 14,
-    background: 'rgba(234, 244, 251, 0.92)',
+    background: 'rgba(234, 244, 251, 0.94)',
     border: '1px solid rgba(207, 230, 246, 0.95)',
-    borderRadius: 16,
+    borderRadius: isMobile ? 20 : 22,
     padding: isMobile ? 14 : 16,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     flexWrap: 'wrap',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 10px 28px rgba(31, 58, 95, 0.11)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   mutedLabel: {
@@ -486,9 +546,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     color: '#1F3A5F',
   },
 
-  // Save button: SOLID + visible
+  saveMsgError: {
+    color: '#B91C1C',
+  },
+
   saveBtn: {
-    background: '#1F3A5F',
+    minHeight: 48,
+    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
     color: '#FFFFFF',
     border: '1px solid rgba(15, 23, 42, 0.2)',
     borderRadius: 14,
@@ -496,23 +560,19 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     cursor: 'pointer',
     fontWeight: 900,
     width: isMobile ? '100%' : undefined,
+    boxShadow: '0 8px 18px rgba(31, 58, 95, 0.23)',
   },
 
   card: {
     marginTop: 14,
-    background: 'rgba(255, 255, 255, 0.90)',
-    borderRadius: 18,
-    padding: isMobile ? 14 : 16,
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(203, 213, 225, 0.72)',
+    borderRadius: 22,
+    padding: isMobile ? 16 : 18,
     color: '#111827',
-
-    // Elevation instead of border
-    boxShadow: isMobile
-      ? '0 8px 24px rgba(15, 23, 42, 0.10)'
-      : '0 10px 30px rgba(15, 23, 42, 0.08)',
-
-    // Keep glass effect
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   grid: {
@@ -521,19 +581,20 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     gap: 10,
   },
 
-  // Student rows: MORE see-through so watermark actually shows "behind cards"
   studentRow: {
-    background: 'rgba(255, 255, 255, 0.7)',
-    border: '1px solid rgba(229, 231, 235, 0.68)',
-    borderRadius: 18,
-    padding: 14,
+    background: 'rgba(255, 255, 255, 0.91)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: 20,
+    padding: isMobile ? 15 : 16,
     color: '#111827',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'center',
     gap: 14,
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 5px 16px rgba(31, 58, 95, 0.055)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
 
   studentName: {
@@ -543,7 +604,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    maxWidth: isMobile ? 150 : 260,
+    maxWidth: isMobile ? '100%' : 300,
   },
 
   studentMeta: {
@@ -556,26 +617,28 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   controls: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: isMobile ? 'space-between' : 'flex-end',
     gap: 10,
     flexShrink: 0,
+    width: isMobile ? '100%' : undefined,
+    paddingTop: isMobile ? 2 : 0,
   },
 
-  // +/- buttons: solid, with clear border + visible text
   ctrlBtn: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    border: '1px solid rgba(209, 213, 219, 1)',
+    border: '1px solid rgba(203, 213, 225, 0.95)',
     background: '#FFFFFF',
     fontSize: 20,
     fontWeight: 900,
     cursor: 'pointer',
     color: '#111827',
+    boxShadow: '0 3px 9px rgba(31, 58, 95, 0.07)',
   },
 
-  // value pill can be slightly translucent but still readable
   valuePill: {
-    minWidth: 54,
+    minWidth: 58,
     textAlign: 'center' as const,
     padding: '10px 12px',
     borderRadius: 999,
@@ -585,5 +648,62 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     color: '#1F3A5F',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
+  },
+
+  noteToggle: {
+    minHeight: 44,
+    marginTop: 6,
+    marginLeft: -10,
+    padding: '8px 10px',
+    border: 0,
+    borderRadius: 10,
+    background: 'transparent',
+    fontSize: 12,
+    fontWeight: 850,
+    textAlign: 'left',
+  },
+
+  notesPanel: {
+    marginTop: 10,
+    padding: 11,
+    borderRadius: 16,
+    border: '1px solid #D8EAF7',
+    background: '#F5FAFE',
+  },
+
+  notesHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8,
+  },
+
+  notesTitle: {
+    color: '#1F3A5F',
+    fontSize: 13,
+    fontWeight: 900,
+  },
+
+  noteClose: {
+    minHeight: 36,
+    padding: '6px 10px',
+    borderRadius: 10,
+    border: '1px solid #CBD5E1',
+    background: '#FFFFFF',
+    color: '#1F3A5F',
+    fontSize: 12,
+    fontWeight: 850,
+  },
+
+  noteError: {
+    marginTop: 8,
+    padding: '9px 10px',
+    borderRadius: 11,
+    border: '1px solid #FECACA',
+    background: '#FEF2F2',
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: 750,
   },
 })

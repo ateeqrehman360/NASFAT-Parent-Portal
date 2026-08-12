@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
@@ -75,6 +76,11 @@ export default function ParentPage() {
   const [isMobile, setIsMobile] = useState(false)
 
   const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const todayLabel = useMemo(() => new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date()), [])
 
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth < 640)
@@ -207,13 +213,12 @@ export default function ParentPage() {
 
   if (loading) {
     return (
-      <main style={S.page}>
+      <main className="nasfat-app" style={S.page}>
         <div style={S.content}>
-          <div style={S.centerCard}>
-            <p style={{ margin: 0, color: '#1F3A5F', fontWeight: 900 }}>Loading…</p>
-            <p style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>
-              Please wait while we load your students’ results and points.
-            </p>
+          <div className="nasfat-surface nasfat-enter" style={S.centerCard} aria-label="Loading student results">
+            <div className="nasfat-skeleton" style={{ width: 170, height: 22 }}>Loading</div>
+            <div className="nasfat-skeleton" style={{ width: '78%', height: 13, marginTop: 10 }}>Loading</div>
+            <div className="nasfat-skeleton" style={{ height: 104, marginTop: 18 }}>Loading</div>
           </div>
         </div>
       </main>
@@ -221,22 +226,24 @@ export default function ParentPage() {
   }
 
   return (
-    <main style={S.page}>
+    <main className="nasfat-app" style={S.page}>
 
-      {/* ✅ Foreground content */}
       <div style={S.content}>
-        <div style={S.header}>
+        <header className="nasfat-surface nasfat-enter" style={S.header}>
           <div style={S.headerLeft}>
             <div>
-              <div style={S.headerTitle}>Madrasa Points</div>
-              <div style={S.headerSub}>Parent View</div>
+              <div style={S.eyebrow}>Family portal</div>
+              <h1 data-heading="true" style={S.headerTitle}>Parent Portal</h1>
+              <div style={S.headerSub}>Madrasa progress, results and behaviour points</div>
             </div>
           </div>
 
           <div style={S.headerRight}>
-            <img src="/nasfat-logo.png" alt="NASFAT Manchester" style={S.headerLogo} />
+            <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={44} height={44} style={S.headerLogo} />
 
             <button
+              className="nasfat-button"
+              type="button"
               onClick={async () => {
                 await supabase.auth.signOut()
                 router.push('/login')
@@ -246,12 +253,12 @@ export default function ParentPage() {
               Log out
             </button>
           </div>
-        </div>
+        </header>
 
-        <div style={S.topInfoCard}>
+        <section className="nasfat-surface nasfat-enter" style={S.topInfoCard} aria-label="Today's information">
           <div>
             <div style={S.mutedLabel}>Today</div>
-            <div style={S.todayBig}>{todayISO}</div>
+            <div className="nasfat-number" style={S.todayBig}>{todayLabel}</div>
           </div>
 
           <div style={S.tipBox}>
@@ -260,16 +267,16 @@ export default function ParentPage() {
               If it says <b>Not updated yet</b>, the teacher hasn’t saved today’s points.
             </div>
           </div>
-        </div>
+        </section>
 
         {errorMsg && (
-          <div style={S.errorCard}>
+          <div className="nasfat-status" role="alert" style={S.errorCard}>
             <b>Something went wrong:</b> {errorMsg}
           </div>
         )}
 
         {students.length === 0 ? (
-          <div style={S.centerCard}>
+          <div className="nasfat-surface nasfat-enter" style={S.centerCard}>
             <p style={{ margin: 0, fontWeight: 900, color: '#1F3A5F' }}>No students linked</p>
             <p style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>
               Please contact the madrasa admin to link your account to your student(s).
@@ -277,13 +284,13 @@ export default function ParentPage() {
           </div>
         ) : (
           <>
-            <section style={S.examSection} aria-labelledby="latest-exam-results">
+            <section className="nasfat-enter" style={S.examSection} aria-labelledby="latest-exam-results">
               <div style={S.sectionHeading}>
                 <div>
-                  <div id="latest-exam-results" style={S.sectionTitle}>Latest exam results</div>
+                  <h2 id="latest-exam-results" style={S.sectionTitle}>Latest exam results</h2>
                   <div style={S.sectionHint}>The latest Quran, Islamic Studies, and Arabic exam month is shown first.</div>
                 </div>
-                <span style={S.sectionPill}>{examResults.length ? `${examResults.length} recorded` : 'No results yet'}</span>
+                <span className="nasfat-number" style={S.sectionPill}>{examResults.length ? `${examResults.length} recorded` : 'No results yet'}</span>
               </div>
 
               <div style={S.examGrid}>
@@ -293,7 +300,7 @@ export default function ParentPage() {
                   const historyOpen = examHistoryOpen[s.id] ?? false
 
                   return (
-                    <article key={s.id} style={S.examCard}>
+                    <article className="nasfat-row nasfat-stagger" key={s.id} style={S.examCard}>
                       <div style={S.childHeader}>
                         <div>
                           <div style={S.childName}>{name}</div>
@@ -304,9 +311,9 @@ export default function ParentPage() {
 
                       {latest ? (
                         <div style={S.examScoreRow}>
-                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Quran</div><div style={S.examScoreValue}>{formatScore(latest.quran_score, latest.quran_max_score)}</div></div>
-                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Islamic Studies</div><div style={S.examScoreValue}>{formatScore(latest.islamic_studies_score, latest.islamic_studies_max_score)}</div></div>
-                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Arabic</div><div style={S.examScoreValue}>{formatScore(latest.arabic_score, latest.arabic_max_score)}</div></div>
+                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Quran</div><div className="nasfat-number" style={S.examScoreValue}>{formatScore(latest.quran_score, latest.quran_max_score)}</div></div>
+                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Islamic Studies</div><div className="nasfat-number" style={S.examScoreValue}>{formatScore(latest.islamic_studies_score, latest.islamic_studies_max_score)}</div></div>
+                          <div style={S.examScoreBox}><div style={S.examScoreLabel}>Arabic</div><div className="nasfat-number" style={S.examScoreValue}>{formatScore(latest.arabic_score, latest.arabic_max_score)}</div></div>
                         </div>
                       ) : (
                         <div style={S.noExamResult}>Your madrasa will add results here once they are available.</div>
@@ -315,6 +322,7 @@ export default function ParentPage() {
                       {history.length > 0 && (
                         <>
                           <button
+                            className="nasfat-button"
                             type="button"
                             onClick={() => setExamHistoryOpen((current) => ({ ...current, [s.id]: !current[s.id] }))}
                             style={S.examHistoryButton}
@@ -323,7 +331,7 @@ export default function ParentPage() {
                             {historyOpen ? 'Hide exam history' : `Exam history (${history.length})`}
                           </button>
                           {historyOpen && (
-                            <div style={S.examHistoryList}>
+                            <div className="nasfat-expand" style={S.examHistoryList}>
                               {history.map((result) => (
                                 <div key={result.id} style={S.examHistoryItem}>
                                   <div style={S.examHistoryDate}>{formatExamMonth(result.exam_date)}</div>
@@ -344,10 +352,10 @@ export default function ParentPage() {
               </div>
             </section>
 
-            <section style={S.pointsSection} aria-labelledby="behaviour-points">
+            <section className="nasfat-enter" style={S.pointsSection} aria-labelledby="behaviour-points">
               <div style={S.sectionHeading}>
                 <div>
-                  <div id="behaviour-points" style={S.sectionTitle}>Behaviour points</div>
+                  <h2 id="behaviour-points" style={S.sectionTitle}>Behaviour points</h2>
                   <div style={S.sectionHint}>Today’s update and cumulative totals for each student.</div>
                 </div>
               </div>
@@ -358,7 +366,7 @@ export default function ParentPage() {
                   const totalVal = totals[s.id] ?? 0
 
                   return (
-                    <div key={s.id} style={S.childCard}>
+                    <article className="nasfat-row nasfat-stagger" key={s.id} style={S.childCard}>
                       <div style={S.childHeader}>
                         <div>
                           <div style={S.childName}>{name}</div>
@@ -373,17 +381,17 @@ export default function ParentPage() {
                       <div style={S.metricsRow}>
                         <div style={S.metricBox}>
                           <div style={S.metricLabel}>Today</div>
-                          <div style={S.metricValue}>{todayVal === null ? '—' : todayVal}</div>
+                          <div className="nasfat-number" style={S.metricValue}>{todayVal === null ? '—' : todayVal}</div>
                         </div>
 
                         <div style={S.metricBox}>
                           <div style={S.metricLabel}>Total</div>
-                          <div style={S.metricValue}>{totalVal}</div>
+                          <div className="nasfat-number" style={S.metricValue}>{totalVal}</div>
                         </div>
                       </div>
 
                       <div style={S.footerNote}>Points reflect behaviour and effort in class.</div>
-                    </div>
+                    </article>
                   )
                 })}
               </div>
@@ -398,34 +406,49 @@ export default function ParentPage() {
 const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   page: {
     position: 'relative',
-    minHeight: '100vh',
+    minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
     color: '#111827',
-    overflow: 'hidden',
+    overflowX: 'hidden',
   },
 
   content: {
-    padding: isMobile ? 14 : 24,
+    width: '100%',
+    maxWidth: 920,
+    margin: '0 auto',
+    padding: isMobile ? '12px 12px max(44px, env(safe-area-inset-bottom))' : '24px 24px 52px',
   },
 
   header: {
     background: 'rgba(255, 255, 255, 0.92)',
-    border: '1px solid rgba(229, 231, 235, 0.8)',
-    borderRadius: 16,
-    padding: isMobile ? 14 : 16,
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 22 : 26,
+    padding: isMobile ? 15 : 20,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     flexWrap: 'wrap',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
   headerTitle: {
-    fontSize: isMobile ? 16 : 18,
+    margin: 0,
+    fontSize: isMobile ? 20 : 25,
     fontWeight: 900,
     color: '#1F3A5F',
-    lineHeight: 1.1,
+    lineHeight: 1.08,
+    letterSpacing: '-0.025em',
+  },
+  eyebrow: {
+    marginBottom: 6,
+    color: '#4E83A5',
+    fontSize: 10,
+    fontWeight: 900,
+    lineHeight: 1,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
   headerSub: {
     marginTop: 4,
@@ -463,18 +486,19 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   topInfoCard: {
-    marginTop: 14,
-    background: 'rgba(234, 244, 251, 0.88)',
+    marginTop: 16,
+    background: 'rgba(234, 244, 251, 0.92)',
     border: '1px solid rgba(207, 230, 246, 0.85)',
-    borderRadius: 16,
+    borderRadius: isMobile ? 20 : 22,
     padding: isMobile ? 14 : 16,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'stretch',
     gap: 12,
     flexWrap: 'wrap',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 10px 28px rgba(31, 58, 95, 0.08)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
   mutedLabel: {
     fontSize: 12,
@@ -483,7 +507,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontWeight: 900,
   },
   todayBig: {
-    fontSize: isMobile ? 20 : 22,
+    fontSize: isMobile ? 18 : 21,
     fontWeight: 900,
     color: '#1F3A5F',
     marginTop: 2,
@@ -514,7 +538,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     marginTop: 18,
     background: 'rgba(255, 255, 255, 0.92)',
     border: '1px solid rgba(229, 231, 235, 0.8)',
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 18,
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
@@ -534,6 +558,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     flexWrap: 'wrap',
   },
   sectionTitle: {
+    margin: 0,
     color: '#1F3A5F',
     fontSize: isMobile ? 17 : 19,
     fontWeight: 900,
@@ -566,13 +591,13 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
   },
   examCard: {
-    background: 'rgba(255, 255, 255, 0.9)',
+    background: 'rgba(255, 255, 255, 0.94)',
     border: '1px solid rgba(207, 230, 246, 0.95)',
     borderRadius: 20,
     padding: isMobile ? 16 : 18,
-    boxShadow: '0 8px 24px rgba(31, 58, 95, 0.08)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(14px)',
+    WebkitBackdropFilter: 'blur(14px)',
   },
   examScoreRow: {
     marginTop: 14,
@@ -585,7 +610,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     background: '#F5FAFE',
     border: '1px solid #D8EAF7',
     borderRadius: 14,
-    padding: '10px 7px',
+    padding: '11px 6px',
     textAlign: 'center',
   },
   examScoreLabel: {
@@ -626,6 +651,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontWeight: 900,
     textAlign: 'left',
     cursor: 'pointer',
+    boxShadow: '0 2px 7px rgba(31, 58, 95, 0.05)',
   },
   examHistoryList: {
     marginTop: 8,
@@ -661,20 +687,14 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   childCard: {
-    background: 'rgba(255, 255, 255, 0.78)',
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.72)',
     borderRadius: 20,
     padding: isMobile ? 16 : 18,
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
 
-    // elevation
-    boxShadow: `
-      0 8px 24px rgba(31, 58, 95, 0.08),
-      0 2px 6px rgba(31, 58, 95, 0.06)
-    `,
-
-    // tap feel
-    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.09)',
   },
   childHeader: {
     display: 'flex',

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
@@ -19,7 +20,11 @@ export default function LoginPage() {
   const [capsOn, setCapsOn] = useState(false)
   const [netHint, setNetHint] = useState<string | null>(null)
 
-  const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const todayLabel = useMemo(() => new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date()), [])
 
   const usernameRef = useRef<HTMLInputElement | null>(null)
 
@@ -126,36 +131,38 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={S.page} aria-label="Login page">
+    <main className="nasfat-app" style={S.page} aria-label="Login page">
       <div style={S.content}>
-
-        {/* ✅ Logo at the top */}
         <div style={S.headerWrap}>
-          <img
+          <Image
+            className="nasfat-logo"
             src="/nasfat-logo.png"
             alt="NASFAT Manchester"
+            width={110}
+            height={110}
+            priority
             style={S.logo}
           />
         </div>
 
-        {/* ✅ Card unchanged */}
-        <div style={S.card}>
+        <div className="nasfat-surface nasfat-enter" style={S.card}>
           <div style={S.top}>
             <div>
-              <div style={S.title}>Madrasa Points</div>
-              <div style={S.subTitle}>Sign in</div>
+              <div style={S.eyebrow}>NASFAT Manchester</div>
+              <h1 data-heading="true" style={S.title}>Parent Portal</h1>
+              <div data-body="true" style={S.subTitle}>Welcome back. Sign in to continue.</div>
             </div>
 
             <div style={S.metaRight} aria-label="Today">
               <div style={S.metaLabel}>Today</div>
-              <div style={S.metaValue}>{todayISO}</div>
+              <div className="nasfat-number" style={S.metaValue}>{todayLabel}</div>
             </div>
           </div>
 
-          {netHint && <div style={S.netCard}>{netHint}</div>}
+          {netHint && <div className="nasfat-status" role="status" style={S.netCard}>{netHint}</div>}
 
           {msg && (
-            <div style={S.errorCard} role="alert" aria-live="polite">
+            <div className="nasfat-status" style={S.errorCard} role="alert" aria-live="polite">
               {msg}
             </div>
           )}
@@ -167,12 +174,14 @@ export default function LoginPage() {
             <input
               ref={usernameRef}
               id="username"
+              name="username"
               style={S.input}
               type="text"
               autoComplete="username"
               placeholder="e.g. abdullah123"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              aria-invalid={Boolean(msg)}
               required
             />
 
@@ -181,6 +190,7 @@ export default function LoginPage() {
             </label>
             <input
               id="password"
+              name="password"
               style={S.input}
               type={showPw ? 'text' : 'password'}
               autoComplete="current-password"
@@ -191,6 +201,7 @@ export default function LoginPage() {
                 const caps = e.getModifierState?.('CapsLock')
                 setCapsOn(Boolean(caps))
               }}
+              aria-invalid={Boolean(msg)}
               required
             />
 
@@ -209,12 +220,13 @@ export default function LoginPage() {
             </div>
 
             <button
+              className="nasfat-button"
               type="submit"
               disabled={loading}
               style={{ ...S.primaryBtn, ...(loading ? S.primaryBtnDisabled : {}) }}
               aria-busy={loading}
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? <><span className="nasfat-spinner" aria-hidden="true" />Signing in…</> : 'Sign in'}
             </button>
 
             <div style={S.note}>
@@ -225,7 +237,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div style={S.footer}>NASFAT Manchester • Madrasa</div>
+        <div className="nasfat-enter" style={S.footer}>NASFAT Manchester • Madrasa</div>
       </div>
       <style jsx global>{`
         input::placeholder {
@@ -238,12 +250,11 @@ export default function LoginPage() {
 
 const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   page: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
-    overflow: 'hidden',
+    overflowX: 'hidden',
   },
 
-  // ✅ NEW: logo at the top (no background watermark)
   headerWrap: {
     display: 'flex',
     justifyContent: 'center',
@@ -251,14 +262,17 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   },
   
   logo: {
-    width: isMobile ? 90 : 110,
+    width: isMobile ? 84 : 104,
     height: 'auto',
-    opacity: 1, // fully opaque
+    opacity: 1,
   },
 
   content: {
-    padding: isMobile ? 14 : 24,
-    minHeight: '100vh',
+    width: '100%',
+    maxWidth: 510,
+    margin: '0 auto',
+    padding: isMobile ? '20px 14px max(20px, env(safe-area-inset-bottom))' : 28,
+    minHeight: '100dvh',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -266,19 +280,13 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   },
 
   card: {
-    marginTop: 14,
-    background: 'rgba(255, 255, 255, 0.90)',
-    borderRadius: 18,
-    padding: isMobile ? 14 : 16,
-
-    // Elevation instead of border
-    boxShadow: isMobile
-      ? '0 8px 24px rgba(15, 23, 42, 0.10)'
-      : '0 10px 30px rgba(15, 23, 42, 0.08)',
-
-    // Keep glass effect
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    background: 'rgba(255, 255, 255, 0.93)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 24 : 28,
+    padding: isMobile ? 18 : 24,
+    boxShadow: '0 22px 60px rgba(31, 58, 95, 0.14)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   top: {
@@ -289,15 +297,26 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
   },
 
   title: {
+    margin: 0,
     fontSize: isMobile ? 20 : 22,
     fontWeight: 900,
     color: '#1F3A5F',
-    letterSpacing: -0.2,
+    letterSpacing: -0.5,
+    lineHeight: 1.1,
+  },
+
+  eyebrow: {
+    marginBottom: 6,
+    color: '#4E83A5',
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 
   subTitle: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: 700,
   },
@@ -308,7 +327,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     borderRadius: 14,
     border: '1px solid rgba(207, 230, 246, 0.85)',
     background: 'rgba(234, 244, 251, 0.80)',
-    minWidth: 130,
+    minWidth: isMobile ? 108 : 126,
   },
 
   metaLabel: {
@@ -347,20 +366,20 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
 
   label: {
     display: 'block',
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#1F3A5F',
     fontWeight: 900,
     marginBottom: 6,
   },
 
   input: {
     width: '100%',
+    minHeight: 50,
     borderRadius: 14,
     border: '1px solid rgba(209, 213, 219, 1)',
     background: '#FFFFFF',
     padding: '12px 14px',
     fontSize: 16,
-    outline: 'none',
     color: '#000000',
     caretColor: '#000000',
   },
@@ -378,13 +397,15 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     display: 'inline-flex',
     alignItems: 'center',
     gap: 10,
+    minHeight: 44,
     cursor: 'pointer',
     userSelect: 'none',
   },
 
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
+    accentColor: '#1F3A5F',
   },
 
   checkboxText: {
@@ -409,12 +430,13 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     borderRadius: 14,
     padding: '12px 14px',
     border: '1px solid rgba(15, 23, 42, 0.2)',
-    background: '#1F3A5F',
+    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
     color: '#FFFFFF',
     fontWeight: 900,
     cursor: 'pointer',
     fontSize: 16,
     minHeight: 48,
+    boxShadow: '0 10px 22px rgba(31, 58, 95, 0.24)',
   },
 
   primaryBtnDisabled: {
@@ -435,6 +457,7 @@ const styles = (isMobile: boolean): Record<string, React.CSSProperties> => ({
     fontSize: 12,
     color: '#6B7280',
     fontWeight: 700,
-    opacity: 0.9,
+    opacity: 0.82,
+    letterSpacing: '0.02em',
   },
 })

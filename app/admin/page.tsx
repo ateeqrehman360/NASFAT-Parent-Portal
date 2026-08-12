@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
@@ -80,17 +81,20 @@ export default function AdminPage() {
   const S = styles(isMobile)
 
   return (
-    <main style={S.page}>
+    <main className="nasfat-app" style={S.page}>
 
       <div style={S.content}>
-        <div style={S.header}>
+        <header className="nasfat-surface nasfat-enter" style={S.header}>
           <div style={S.headerCopy}>
-            <div style={S.headerTitle}>Admin</div>
-            <div style={S.headerSub}>Choose a class to log today’s points</div>
+            <div style={S.eyebrow}>NASFAT Manchester</div>
+            <h1 data-heading="true" style={S.headerTitle}>Admin dashboard</h1>
+            <div data-body="true" style={S.headerSub}>Log points and manage the madrasa in one place.</div>
           </div>
           <div style={S.headerActions}>
-            <img src="/nasfat-logo.png" alt="NASFAT Manchester" style={S.headerLogo} />
+            <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={44} height={44} style={S.headerLogo} />
             <button
+              className="nasfat-button"
+              type="button"
               onClick={async () => {
                 await supabase.auth.signOut()
                 router.push('/login')
@@ -100,52 +104,67 @@ export default function AdminPage() {
               Log out
             </button>
           </div>
-        </div>
+        </header>
 
         {loading ? (
-          <div style={S.card}>Loading…</div>
+          <div className="nasfat-surface nasfat-enter" style={S.card} aria-label="Loading dashboard">
+            <div className="nasfat-skeleton" style={{ width: 112, height: 20 }}>Loading</div>
+            <div className="nasfat-skeleton" style={{ width: '72%', height: 13, marginTop: 10 }}>Loading</div>
+            <div style={S.classGrid}>
+              {[0, 1, 2, 3].map((item) => <div className="nasfat-skeleton" key={item} style={{ height: 66 }}>Loading</div>)}
+            </div>
+          </div>
         ) : (
           <>
             {errorMsg && (
-              <div style={S.errorCard}>
+              <div className="nasfat-status" role="alert" style={S.errorCard}>
                 <b>Something went wrong:</b> {errorMsg}
               </div>
             )}
 
-            <div style={S.card}>
-              <div style={S.cardTitle}>Classes</div>
-              <div style={S.cardHint}>Tap a class to open the points screen.</div>
+            <section className="nasfat-surface nasfat-enter" style={S.card} aria-labelledby="class-points-heading">
+              <div style={S.cardHeader}>
+                <div>
+                  <h2 id="class-points-heading" style={S.cardTitle}>Today’s classes</h2>
+                  <div data-body="true" style={S.cardHint}>Choose a group to open the points screen.</div>
+                </div>
+                <span className="nasfat-number" style={S.countPill}>{classes.length} {classes.length === 1 ? 'group' : 'groups'}</span>
+              </div>
 
               {classes.length === 0 ? (
-                <p style={{ marginTop: 12, color: '#6B7280', fontWeight: 600 }}>
+                <div style={S.emptyState}>
                   No classes yet. Create your first class in Class management below.
-                </p>
+                </div>
               ) : (
                 <div style={S.classGrid}>
-                  {classes.map((c) => (
+                  {classes.map((c, index) => (
                     <button
+                      className="nasfat-button nasfat-tile nasfat-stagger"
                       key={c.id}
+                      type="button"
                       onClick={() => router.push(`/admin/classes/${c.id}`)}
                       style={S.classRow}
+                      aria-label={`Open ${c.name} points`}
                     >
-                      <span style={{ fontWeight: 900 }}>{c.name}</span>
+                      <span style={S.rowLead}><span aria-hidden="true" style={S.classBadge}>{String(index + 1).padStart(2, '0')}</span><span><span style={S.rowTitle}>{c.name}</span><span style={S.rowSubtitle}>Log today’s points</span></span></span>
                       <span style={S.chev}>→</span>
                     </button>
                   ))}
                 </div>
               )}
-            </div>
+            </section>
 
-            <div style={{ ...S.card, ...S.managementCard }}>
-              <div style={S.cardTitle}>Management</div>
-              <div style={S.cardHint}>Manage students, parent accounts, classes, and exam results.</div>
+            <section className="nasfat-surface nasfat-enter" style={{ ...S.card, ...S.managementCard }} aria-labelledby="management-heading">
+              <div style={S.sectionKicker}>Management</div>
+              <h2 id="management-heading" style={S.cardTitle}>Madrasa records</h2>
+              <div data-body="true" style={S.cardHint}>Students, family access, groups, and exam results.</div>
               <div style={S.classGrid}>
-                <button onClick={() => router.push('/admin/students')} style={S.classRow}><span style={{ fontWeight: 900 }}>Students</span><span style={S.chev}>→</span></button>
-                <button onClick={() => router.push('/admin/parents')} style={S.classRow}><span style={{ fontWeight: 900 }}>Parents</span><span style={S.chev}>→</span></button>
-                <button onClick={() => router.push('/admin/classes/manage')} style={S.classRow}><span style={{ fontWeight: 900 }}>Classes</span><span style={S.chev}>→</span></button>
-                <button onClick={() => router.push('/admin/exams')} style={S.classRow}><span style={{ fontWeight: 900 }}>Exam results</span><span style={S.chev}>→</span></button>
+                <ManagementLink badge="ST" label="Students" description="Names, classes & archive" onClick={() => router.push('/admin/students')} style={S} />
+                <ManagementLink badge="PA" label="Parents" description="Accounts & student links" onClick={() => router.push('/admin/parents')} style={S} />
+                <ManagementLink badge="CL" label="Classes" description="Create & rename groups" onClick={() => router.push('/admin/classes/manage')} style={S} />
+                <ManagementLink badge="EX" label="Exam results" description="Enter & update scores" onClick={() => router.push('/admin/exams')} style={S} />
               </div>
-            </div>
+            </section>
           </>
         )}
       </div>
@@ -154,13 +173,20 @@ export default function AdminPage() {
   )
 }
 
+function ManagementLink({ badge, label, description, onClick, style }: { badge: string; label: string; description: string; onClick: () => void; style: Record<string, CSSProperties> }) {
+  return <button className="nasfat-button nasfat-tile nasfat-stagger" type="button" onClick={onClick} style={style.classRow}>
+    <span style={style.rowLead}><span aria-hidden="true" style={style.managementBadge}>{badge}</span><span><span style={style.rowTitle}>{label}</span><span style={style.rowSubtitle}>{description}</span></span></span>
+    <span aria-hidden="true" style={style.chev}>→</span>
+  </button>
+}
+
 const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   page: {
     position: 'relative',
-    minHeight: '100vh',
+    minHeight: '100dvh',
     background: 'linear-gradient(180deg, #EAF4FB 0%, #F5F7FA 40%)',
     color: '#111827',
-    overflow: 'hidden',
+    overflowX: 'hidden',
   },
 
   content: {
@@ -170,22 +196,22 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     maxWidth: 820,
     boxSizing: 'border-box',
     margin: '0 auto',
-    padding: isMobile ? '14px 14px 36px' : '24px 24px 44px',
+    padding: isMobile ? '12px 12px max(40px, env(safe-area-inset-bottom))' : '24px 24px 48px',
   },
 
-  // EXACT match to classId header
   header: {
-    background: 'rgba(255, 255, 255, 0.90)',
-    border: '1px solid rgba(229, 231, 235, 0.75)',
-    borderRadius: 16,
-    padding: isMobile ? 14 : 16,
+    background: 'rgba(255, 255, 255, 0.92)',
+    border: '1px solid rgba(203, 213, 225, 0.76)',
+    borderRadius: isMobile ? 22 : 26,
+    padding: isMobile ? 15 : 20,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
     flexWrap: 'nowrap',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   headerCopy: {
@@ -207,15 +233,27 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   headerTitle: {
-    fontSize: isMobile ? 18 : 20,
+    margin: 0,
+    fontSize: isMobile ? 21 : 26,
     fontWeight: 900,
     color: '#1F3A5F',
-    lineHeight: 1.1,
+    lineHeight: 1.08,
+    letterSpacing: '-0.025em',
+  },
+
+  eyebrow: {
+    marginBottom: 6,
+    color: '#4E83A5',
+    fontSize: 10,
+    fontWeight: 900,
+    lineHeight: 1,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 
   headerSub: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: 700,
   },
@@ -232,36 +270,32 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   },
 
   card: {
-    marginTop: 14,
-    background: 'rgba(255, 255, 255, 0.90)',
-    borderRadius: 18,
-    padding: isMobile ? 14 : 16,
+    marginTop: 16,
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(203, 213, 225, 0.72)',
+    borderRadius: isMobile ? 22 : 26,
+    padding: isMobile ? 16 : 20,
     color: '#111827',
-
-    // Elevation instead of border
-    boxShadow: isMobile
-      ? '0 8px 24px rgba(15, 23, 42, 0.10)'
-      : '0 10px 30px rgba(15, 23, 42, 0.08)',
-
-    // Keep glass effect
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    boxShadow: '0 14px 38px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
   },
 
   managementCard: {
-    background: 'rgba(234, 244, 251, 0.86)',
+    background: 'linear-gradient(145deg, rgba(234, 244, 251, 0.94), rgba(255, 255, 255, 0.94))',
     border: '1px solid rgba(207, 230, 246, 0.95)',
   },
 
   cardTitle: {
-    fontSize: 16,
+    margin: 0,
+    fontSize: 18,
     fontWeight: 900,
     color: '#1F3A5F',
   },
 
   cardHint: {
-    marginTop: 4,
-    fontSize: 12,
+    marginTop: 5,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: 700,
   },
@@ -269,7 +303,7 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   classGrid: {
     display: 'grid',
     gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-    gap: 10,
+    gap: 11,
     marginTop: 14,
   },
 
@@ -277,10 +311,10 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     width: '100%',
     textAlign: 'left' as const,
     background: '#FFFFFF',
-    border: '1px solid rgba(209, 213, 219, 1)',
-    borderRadius: 14,
-    padding: '14px 14px',
-    minHeight: 58,
+    border: '1px solid rgba(203, 213, 225, 0.9)',
+    borderRadius: 16,
+    padding: '12px 13px',
+    minHeight: 68,
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'space-between',
@@ -288,6 +322,99 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontSize: 15,
     fontWeight: 900,
     color: '#111827',
+    boxShadow: '0 3px 10px rgba(31, 58, 95, 0.045)',
+  },
+
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+
+  countPill: {
+    flexShrink: 0,
+    padding: '6px 10px',
+    borderRadius: 999,
+    background: '#EAF4FB',
+    border: '1px solid #CFE6F6',
+    color: '#1F3A5F',
+    fontSize: 12,
+    fontWeight: 900,
+  },
+
+  emptyState: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 15,
+    background: '#F8FAFC',
+    border: '1px dashed #CBD5E1',
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1.45,
+  },
+
+  rowLead: {
+    minWidth: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 11,
+  },
+
+  rowTitle: {
+    display: 'block',
+    color: '#1F3A5F',
+    fontWeight: 900,
+    lineHeight: 1.2,
+  },
+
+  rowSubtitle: {
+    display: 'block',
+    marginTop: 4,
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+
+  classBadge: {
+    width: 38,
+    height: 38,
+    flexShrink: 0,
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: 12,
+    background: '#EAF4FB',
+    border: '1px solid #CFE6F6',
+    color: '#1F3A5F',
+    fontSize: 11,
+    fontWeight: 900,
+    fontVariantNumeric: 'tabular-nums',
+  },
+
+  managementBadge: {
+    width: 38,
+    height: 38,
+    flexShrink: 0,
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: 12,
+    background: '#1F3A5F',
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: '0.03em',
+    boxShadow: '0 6px 13px rgba(31, 58, 95, 0.2)',
+  },
+
+  sectionKicker: {
+    marginBottom: 6,
+    color: '#4E83A5',
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 
   chev: {

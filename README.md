@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NASFAT Parent Portal
+
+A mobile-first Next.js and Supabase portal for NASFAT Manchester families and madrasa administrators.
 
 ## Getting Started
 

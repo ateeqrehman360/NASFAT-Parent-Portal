@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ui } from '@/components/ManagementUI'
 import { managementPost, managementRequest } from '@/lib/adminManagementClient'
@@ -186,49 +187,49 @@ export default function ExamManagementPage() {
     router.replace('/login')
   }
 
-  return <main style={ui.page}><div style={ui.content}>
-    <header style={ui.header}>
-      <div style={ui.headerCopy}><div style={ui.title}>Exam results</div><div style={ui.subtitle}>Record Quran, Islamic Studies, and Arabic exam scores.</div></div>
+  return <main className="nasfat-app" style={ui.page}><div style={ui.content}>
+    <header className="nasfat-surface nasfat-enter" style={ui.header}>
+      <div style={ui.headerCopy}><div style={ui.eyebrow}>Progress records</div><h1 data-heading="true" style={{ ...ui.title, margin: 0 }}>Exam results</h1><div data-body="true" style={ui.subtitle}>Record Quran, Islamic Studies, and Arabic exam scores.</div></div>
       <div style={ui.headerActions}>
         {role === 'admin'
-          ? <><button type="button" onClick={() => router.push('/admin')} style={ui.button}>← Admin</button><button type="button" onClick={() => router.push('/admin/students')} style={ui.button}>Edit students</button></>
-          : <button type="button" onClick={signOut} style={ui.button}>Log out</button>}
-        <img src="/nasfat-logo.png" alt="NASFAT Manchester" style={ui.logo} />
+          ? <><button className="nasfat-button" type="button" onClick={() => router.push('/admin')} style={ui.button}>← Admin</button><button className="nasfat-button" type="button" onClick={() => router.push('/admin/students')} style={ui.button}>Edit students</button></>
+          : <button className="nasfat-button" type="button" onClick={signOut} style={ui.button}>Log out</button>}
+        <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={46} height={46} style={ui.logo} />
       </div>
     </header>
 
-    <section style={ui.card}>
-      <div style={ui.cardHeader}><div><div style={ui.cardTitle}>{form.result_id ? 'Edit exam result' : 'Enter exam results'}</div><div style={ui.hint}>Choose the exam month, then enter a mark as 35/40 to show the total. Missing subjects can be added later.</div></div><span style={ui.countPill}>{role === 'staff' ? 'Staff entry' : 'Admin entry'}</span></div>
+    <section className="nasfat-surface nasfat-enter" style={ui.card}>
+      <div style={ui.cardHeader}><div><h2 style={{ ...ui.cardTitle, margin: 0 }}>{form.result_id ? 'Edit exam result' : 'Enter exam results'}</h2><div data-body="true" style={ui.hint}>Choose the exam month, then enter a mark as 35/40 to show the total. Missing subjects can be added later.</div></div><span style={ui.countPill}>{role === 'staff' ? 'Staff entry' : 'Admin entry'}</span></div>
       <form onSubmit={save} aria-busy={saving}>
         <label htmlFor="exam-student-search" style={ui.label}>Find student<input id="exam-student-search" name="student_search" aria-label="Find student" placeholder="Search by student or group" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} style={ui.input} /></label>
         <label htmlFor="exam-student" style={ui.label}>Student<select id="exam-student" name="student_id" required value={form.student_id} onChange={(event) => setForm((current) => ({ ...current, student_id: event.target.value }))} style={ui.input}><option value="">Choose a student</option>{matchingStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} — {student.class_name}</option>)}</select></label>
         <label htmlFor="exam-month" style={ui.label}>Exam month<input id="exam-month" name="exam_month" type="month" required value={form.exam_month} onChange={(event) => setForm((current) => ({ ...current, exam_month: event.target.value }))} style={ui.input} /></label>
-        <div style={scoreFormGrid}>
+        <div className="nasfat-score-form">
           <label htmlFor="quran-score" style={ui.label}>Quran<input id="quran-score" name="quran_score" inputMode="text" placeholder="e.g. 35/40" value={form.quran_score} onChange={(event) => setForm((current) => ({ ...current, quran_score: event.target.value }))} style={ui.input} /></label>
           <label htmlFor="islamic-studies-score" style={ui.label}>Islamic Studies<input id="islamic-studies-score" name="islamic_studies_score" inputMode="text" placeholder="e.g. 35/40" value={form.islamic_studies_score} onChange={(event) => setForm((current) => ({ ...current, islamic_studies_score: event.target.value }))} style={ui.input} /></label>
           <label htmlFor="arabic-score" style={ui.label}>Arabic<input id="arabic-score" name="arabic_score" inputMode="text" placeholder="e.g. 35/40" value={form.arabic_score} onChange={(event) => setForm((current) => ({ ...current, arabic_score: event.target.value }))} style={ui.input} /></label>
         </div>
-        <div style={ui.actions}><button disabled={saving || !students.length} style={{ ...ui.primary, opacity: saving || !students.length ? .7 : 1 }}>{saving ? 'Saving…' : form.result_id ? 'Save changes' : 'Save exam results'}</button><button type="button" onClick={clearForm} style={ui.button}>{form.result_id ? 'Cancel edit' : 'Clear form'}</button></div>
+        <div style={ui.actions}><button className="nasfat-button nasfat-full-button-mobile" disabled={saving || !students.length} style={{ ...ui.primary, opacity: saving || !students.length ? .7 : 1 }}>{saving ? <><span className="nasfat-spinner" aria-hidden="true" />Saving…</> : form.result_id ? 'Save changes' : 'Save exam results'}</button><button className="nasfat-button" type="button" onClick={clearForm} style={ui.button}>{form.result_id ? 'Cancel edit' : 'Clear form'}</button></div>
       </form>
-      {!loading && !students.length && <div style={ui.status}>There are no active students to enter results for.</div>}
+      {!loading && !students.length && <div className="nasfat-status" style={ui.status}>There are no active students to enter results for.</div>}
     </section>
 
-    {message && <div role="status" style={ui.status}>{message}</div>}
-    {error && <div role="alert" style={ui.error}>{error}</div>}
+    {message && <div className="nasfat-status" role="status" style={ui.status}>{message}</div>}
+    {error && <div className="nasfat-status" role="alert" style={ui.error}>{error}</div>}
 
-    <section style={ui.card}>
-      <div style={ui.cardHeader}><div><div style={ui.cardTitle}>Recorded results</div><div style={ui.hint}>The latest exam month is shown first. Older months remain available as history.</div></div><span style={ui.countPill}>{loading ? 'Loading…' : `${filteredResults.length} shown`}</span></div>
+    <section className="nasfat-surface nasfat-enter" style={ui.card}>
+      <div style={ui.cardHeader}><div><h2 style={{ ...ui.cardTitle, margin: 0 }}>Recorded results</h2><div data-body="true" style={ui.hint}>The latest exam month is shown first. Older months remain available as history.</div></div><span className="nasfat-number" style={ui.countPill}>{loading ? 'Loading…' : `${filteredResults.length} shown`}</span></div>
       <input id="result-search" name="result_search" aria-label="Search recorded results" placeholder="Search by student, group, or month" value={resultSearch} onChange={(event) => setResultSearch(event.target.value)} style={ui.search} />
-      {loading ? <div style={ui.status}>Loading results…</div> : filteredResults.length === 0 ? <div style={ui.status}>No exam results have been recorded yet.</div> : filteredResults.map((result) => {
+      {loading ? <div className="nasfat-status" style={ui.status}><span className="nasfat-spinner" aria-hidden="true" />Loading results…</div> : filteredResults.length === 0 ? <div className="nasfat-status" style={ui.status}>No exam results have been recorded yet.</div> : filteredResults.map((result) => {
         const student = studentsById.get(result.student_id)
-        return <article key={result.id} style={ui.row}>
+        return <article className="nasfat-row nasfat-stagger" key={result.id} style={ui.row}>
           <div style={ui.rowHeader}><div><div style={ui.rowTitle}>{student ? studentName(student) : 'Student record unavailable'}</div><div style={ui.hint}>{student?.class_name ?? 'No class'}</div></div><span style={ui.countPill}>{displayMonth(result.exam_date)}</span></div>
-          <div style={scoreSummaryGrid}>
+          <div className="nasfat-score-summary">
             <ScoreBox label="Quran" value={displayScore(result.quran_score, result.quran_max_score)} />
             <ScoreBox label="Islamic Studies" value={displayScore(result.islamic_studies_score, result.islamic_studies_max_score)} />
             <ScoreBox label="Arabic" value={displayScore(result.arabic_score, result.arabic_max_score)} />
           </div>
-          <div style={ui.actions}><button type="button" onClick={() => edit(result)} style={ui.button}>Edit results</button></div>
+          <div style={ui.actions}><button className="nasfat-button" type="button" onClick={() => edit(result)} style={ui.button}>Edit results</button></div>
         </article>
       })}
     </section>
@@ -236,11 +237,9 @@ export default function ExamManagementPage() {
 }
 
 function ScoreBox({ label, value }: { label: string; value: string }) {
-  return <div style={scoreBox}><div style={scoreLabel}>{label}</div><div style={scoreValue}>{value}</div></div>
+  return <div style={scoreBox}><div style={scoreLabel}>{label}</div><div className="nasfat-number" style={scoreValue}>{value}</div></div>
 }
 
-const scoreFormGrid: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 2 }
-const scoreSummaryGrid: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 12 }
 const scoreBox: CSSProperties = { minWidth: 0, padding: '10px 8px', borderRadius: 14, background: '#F5FAFE', border: '1px solid #D8EAF7', textAlign: 'center' }
 const scoreLabel: CSSProperties = { color: '#64748B', fontSize: 11, fontWeight: 800, lineHeight: 1.25 }
 const scoreValue: CSSProperties = { marginTop: 5, color: '#1F3A5F', fontSize: 20, lineHeight: 1, fontWeight: 900, overflowWrap: 'anywhere' }
