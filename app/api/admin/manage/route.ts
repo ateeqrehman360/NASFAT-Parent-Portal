@@ -423,6 +423,15 @@ export async function POST(request: NextRequest) {
       if (authError) throw authError
       return NextResponse.json({ ok: true })
     }
+    if (action === 'delete-student-note') {
+      const noteId = String(body.note_id ?? '').trim()
+      if (!noteId) return badRequest('Note not found.')
+      const { data: deleted, error } = await supabaseAdmin().from('student_notes')
+        .delete().eq('id', noteId).select('id').maybeSingle()
+      if (error) throw error
+      if (!deleted) return badRequest('Note not found.')
+      return NextResponse.json({ ok: true })
+    }
     if (action === 'save-attendance') {
       const classId = String(body.class_id ?? '')
       const classDate = String(body.class_date ?? '')

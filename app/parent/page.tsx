@@ -43,6 +43,19 @@ type ExamResult = {
   updated_at: string
 }
 
+type StudentNote = {
+  id: string
+  student_id: string
+  title: string | null
+  content: string
+  created_at: string | null
+}
+
+type StudentNoteRead = {
+  note_id: string
+  read_at: string
+}
+
 function accountIsArchived(bannedUntil: string | null | undefined) {
   if (!bannedUntil) return false
   const timestamp = Date.parse(bannedUntil)
@@ -75,6 +88,14 @@ function compareExamResults(a: ExamResult, b: ExamResult) {
   return b.updated_at.localeCompare(a.updated_at)
 }
 
+function formatNoteDate(value: string | null) {
+  if (!value) return 'Date not recorded'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed)
+}
+
 export default function ParentPage() {
   const router = useRouter()
 
@@ -85,7 +106,13 @@ export default function ParentPage() {
   const [examResults, setExamResults] = useState<ExamResult[]>([])
   const [classNames, setClassNames] = useState<Record<string, string>>({})
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([])
+  const [studentNotes, setStudentNotes] = useState<StudentNote[]>([])
+  const [noteReadAt, setNoteReadAt] = useState<Record<string, string>>({})
   const [examHistoryOpen, setExamHistoryOpen] = useState<Record<string, boolean>>({})
+  const [noteHistoryOpen, setNoteHistoryOpen] = useState<Record<string, boolean>>({})
+  const [markingNoteIds, setMarkingNoteIds] = useState<Record<string, boolean>>({})
+  const [noteMessage, setNoteMessage] = useState<string | null>(null)
+  const [parentId, setParentId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -143,6 +170,7 @@ export default function ParentPage() {
         router.push('/login')
         return
       }
+      setParentId(user.id)
 
       const { data: kids, error: kidsErr } = await supabase
         .from('students')
@@ -165,6 +193,8 @@ export default function ParentPage() {
         setExamResults([])
         setClassNames({})
         setAttendanceRows([])
+        setStudentNotes([])
+        setNoteReadAt({})
         setLoading(false)
         return
       }
@@ -176,6 +206,8 @@ export default function ParentPage() {
         { data: examData, error: examErr },
         { data: classData, error: classErr },
         { data: attendanceData, error: attendanceErr },
+        { data: noteData, error: noteErr },
+        { data: noteReadData, error: noteReadErr },
       ] = await Promise.all([
         supabase
           .from('daily_points')
@@ -196,6 +228,15 @@ export default function ParentPage() {
           .select('student_id, class_date, present')
           .in('student_id', ids)
           .eq('present', true),
+        supabase
+          .from('student_notes')
+          .select('id, student_id, title, content, created_at')
+          .in('student_id', ids)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('student_note_reads')
+          .select('note_id, read_at')
+          .eq('parent_id', user.id),
       ])
 
       if (rowsErr) {
@@ -231,6 +272,22 @@ export default function ParentPage() {
       } else {
         setAttendanceRows((attendanceData ?? []) as AttendanceRow[])
       }
+
+      if (noteErr) {
+        console.error(noteErr)
+        setStudentNotes([])
+        warnings.push('Teacher notes are unavailable right now.')
+      } else {
+        setStudentNotes((noteData ?? []) as StudentNote[])
+      }
+
+      if (noteReadErr) {
+        console.error(noteReadErr)
+        setNoteReadAt({})
+        warnings.push('Note history status is unavailable right now.')
+      } else {
+        setNoteReadAt(Object.fromEntries(((noteReadData ?? []) as StudentNoteRead[]).map((read) => [read.note_id, read.read_at])))
+      }
       setErrorMsg(warnings.length ? `${warnings.join(' ')} Behaviour points are still shown.` : null)
 
       // totals
@@ -264,6 +321,39 @@ export default function ParentPage() {
     }
     return grouped
   }, [attendanceRows])
+
+  const notesByStudent = useMemo(() => {
+    const grouped: Record<string, StudentNote[]> = {}
+    for (const note of studentNotes) grouped[note.student_id] = [...(grouped[note.student_id] ?? []), note]
+    return grouped
+  }, [studentNotes])
+
+  const unreadNoteCount = useMemo(
+    () => studentNotes.reduce((count, note) => count + (noteReadAt[note.id] ? 0 : 1), 0),
+    [noteReadAt, studentNotes],
+  )
+
+  const markNoteRead = async (note: StudentNote) => {
+    if (!parentId || markingNoteIds[note.id]) return
+    setMarkingNoteIds((current) => ({ ...current, [note.id]: true }))
+    setNoteMessage(null)
+    const readAt = new Date().toISOString()
+    const { error } = await supabase.from('student_note_reads').upsert({
+      note_id: note.id,
+      parent_id: parentId,
+      read_at: readAt,
+    }, { onConflict: 'note_id,parent_id', ignoreDuplicates: true })
+
+    if (error) {
+      console.error(error)
+      setNoteMessage('That note could not be marked as read. Please try again.')
+    } else {
+      setNoteReadAt((current) => ({ ...current, [note.id]: readAt }))
+      setNoteHistoryOpen((current) => ({ ...current, [note.student_id]: true }))
+      setNoteMessage('Note moved to past notes.')
+    }
+    setMarkingNoteIds((current) => ({ ...current, [note.id]: false }))
+  }
 
   const S = styles(isMobile)
 
@@ -340,6 +430,85 @@ export default function ParentPage() {
           </div>
         ) : (
           <>
+            <section className="nasfat-enter" style={S.notesSection} aria-labelledby="teacher-notes">
+              <div style={S.sectionHeading}>
+                <div>
+                  <h2 id="teacher-notes" style={S.sectionTitle}>Teacher notes</h2>
+                  <div style={S.sectionHint}>New notes stay here until you mark them as read. Every past note remains in history.</div>
+                </div>
+                <span className="nasfat-number" aria-live="polite" style={{ ...S.sectionPill, ...(unreadNoteCount > 0 ? S.notificationPill : {}) }}>
+                  {unreadNoteCount > 0 ? `${unreadNoteCount} new` : 'All caught up'}
+                </span>
+              </div>
+
+              {noteMessage && <div className="nasfat-status" role="status" aria-live="polite" style={{ ...S.noteMessage, ...(noteMessage.startsWith('That note') ? S.noteMessageError : {}) }}>{noteMessage}</div>}
+
+              <div style={S.noteGrid}>
+                {students.map((student) => {
+                  const name = `${student.first_name}${student.last_name ? ` ${student.last_name}` : ''}`
+                  const classLabel = student.class_id ? classNames[student.class_id] ?? 'Class unavailable' : 'Class not assigned'
+                  const notes = notesByStudent[student.id] ?? []
+                  const currentNotes = notes.filter((note) => !noteReadAt[note.id])
+                  const pastNotes = notes.filter((note) => noteReadAt[note.id])
+                  const historyOpen = noteHistoryOpen[student.id] ?? false
+
+                  return <article className="nasfat-row nasfat-stagger" key={student.id} style={S.noteStudentCard}>
+                    <div style={S.childHeader}>
+                      <div>
+                        <div style={S.childName}>{name}</div>
+                        <div style={S.childMeta}>{classLabel} · Teacher notes</div>
+                      </div>
+                      <span style={currentNotes.length > 0 ? S.newNoteBadge : S.badgeUpdated}>
+                        {currentNotes.length > 0 ? `${currentNotes.length} new` : 'No new notes'}
+                      </span>
+                    </div>
+
+                    {currentNotes.length > 0 ? <div style={S.currentNoteList}>
+                      {currentNotes.map((note) => <div key={note.id} style={S.currentNoteCard}>
+                        <div style={S.noteMetaRow}>
+                          <span className="nasfat-number" style={S.noteDate}>{formatNoteDate(note.created_at)}</span>
+                          <span style={S.newNoteLabel}>New</span>
+                        </div>
+                        {note.title && <div style={S.noteTitle}>{note.title}</div>}
+                        <div style={S.noteContent}>{note.content}</div>
+                        <button
+                          className="nasfat-button"
+                          type="button"
+                          disabled={markingNoteIds[note.id]}
+                          onClick={() => void markNoteRead(note)}
+                          style={S.markReadButton}
+                        >
+                          {markingNoteIds[note.id] ? <><span className="nasfat-spinner" aria-hidden="true" />Saving…</> : 'Mark as read'}
+                        </button>
+                      </div>)}
+                    </div> : <div style={S.noCurrentNotes}>{notes.length > 0 ? 'You have read every note for this student.' : 'No teacher notes have been added yet.'}</div>}
+
+                    {pastNotes.length > 0 && <>
+                      <button
+                        className="nasfat-button"
+                        type="button"
+                        onClick={() => setNoteHistoryOpen((current) => ({ ...current, [student.id]: !current[student.id] }))}
+                        style={S.noteHistoryButton}
+                        aria-expanded={historyOpen}
+                      >
+                        {historyOpen ? 'Hide past notes' : `Past notes (${pastNotes.length})`}
+                      </button>
+                      {historyOpen && <div className="nasfat-expand" style={S.noteHistoryList}>
+                        {pastNotes.map((note) => <div key={note.id} style={S.pastNoteItem}>
+                          <div style={S.noteMetaRow}>
+                            <span className="nasfat-number" style={S.noteDate}>{formatNoteDate(note.created_at)}</span>
+                            <span style={S.readLabel}>Read</span>
+                          </div>
+                          {note.title && <div style={S.noteTitle}>{note.title}</div>}
+                          <div style={S.noteContent}>{note.content}</div>
+                        </div>)}
+                      </div>}
+                    </>}
+                  </article>
+                })}
+              </div>
+            </section>
+
             <section className="nasfat-enter" style={S.examSection} aria-labelledby="latest-exam-results">
               <div style={S.sectionHeading}>
                 <div>
@@ -614,8 +783,166 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     WebkitBackdropFilter: 'blur(10px)',
   },
 
-  examSection: {
+  notesSection: {
     marginTop: 18,
+  },
+  notificationPill: {
+    background: '#FFF7E8',
+    border: '1px solid #F3D39B',
+    color: '#8A5208',
+    boxShadow: '0 5px 14px rgba(154, 90, 6, 0.10)',
+  },
+  noteMessage: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    border: '1px solid #CFE6F6',
+    background: '#EAF4FB',
+    color: '#1F3A5F',
+    fontSize: 13,
+    fontWeight: 800,
+  },
+  noteMessageError: {
+    border: '1px solid #FECACA',
+    background: '#FEF2F2',
+    color: '#B91C1C',
+  },
+  noteGrid: {
+    marginTop: 14,
+    display: 'grid',
+    gap: 14,
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
+  },
+  noteStudentCard: {
+    background: 'rgba(255, 255, 255, 0.94)',
+    border: '1px solid rgba(207, 230, 246, 0.95)',
+    borderRadius: 20,
+    padding: isMobile ? 16 : 18,
+    boxShadow: '0 12px 32px rgba(31, 58, 95, 0.10)',
+    backdropFilter: 'blur(14px)',
+    WebkitBackdropFilter: 'blur(14px)',
+  },
+  newNoteBadge: {
+    flexShrink: 0,
+    borderRadius: 999,
+    padding: '6px 10px',
+    border: '1px solid #F3D39B',
+    background: '#FFF7E8',
+    color: '#8A5208',
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: 'nowrap',
+  },
+  currentNoteList: {
+    marginTop: 12,
+    display: 'grid',
+    gap: 10,
+  },
+  currentNoteCard: {
+    padding: 13,
+    borderRadius: 16,
+    border: '1px solid #F3D39B',
+    background: 'linear-gradient(145deg, #FFF9ED, #FFFFFF)',
+    boxShadow: '0 5px 16px rgba(154, 90, 6, 0.07)',
+  },
+  noteMetaRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  noteDate: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: 800,
+  },
+  newNoteLabel: {
+    borderRadius: 999,
+    padding: '4px 8px',
+    background: '#9A5A06',
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 900,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+  },
+  readLabel: {
+    borderRadius: 999,
+    padding: '4px 8px',
+    border: '1px solid #D8EAF7',
+    background: '#F5FAFE',
+    color: '#1F5E91',
+    fontSize: 10,
+    fontWeight: 900,
+    textTransform: 'uppercase',
+  },
+  noteTitle: {
+    marginTop: 10,
+    color: '#1F3A5F',
+    fontSize: 14,
+    fontWeight: 900,
+    lineHeight: 1.3,
+  },
+  noteContent: {
+    marginTop: 7,
+    color: '#374151',
+    fontSize: 14,
+    lineHeight: 1.55,
+    overflowWrap: 'anywhere',
+    whiteSpace: 'pre-wrap',
+  },
+  markReadButton: {
+    width: '100%',
+    minHeight: 46,
+    marginTop: 12,
+    borderRadius: 14,
+    border: '1px solid #152C4A',
+    background: 'linear-gradient(180deg, #294B74 0%, #1F3A5F 100%)',
+    color: '#FFFFFF',
+    padding: '10px 14px',
+    fontSize: 14,
+    fontWeight: 900,
+    boxShadow: '0 8px 18px rgba(31, 58, 95, 0.20)',
+  },
+  noCurrentNotes: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    border: '1px dashed #CBD5E1',
+    background: '#F8FAFC',
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: 650,
+    lineHeight: 1.45,
+  },
+  noteHistoryButton: {
+    width: '100%',
+    minHeight: 46,
+    marginTop: 12,
+    borderRadius: 14,
+    border: '1px solid #CBD5E1',
+    background: '#FFFFFF',
+    color: '#1F3A5F',
+    padding: '10px 13px',
+    fontSize: 14,
+    fontWeight: 900,
+    textAlign: 'left',
+    boxShadow: '0 2px 7px rgba(31, 58, 95, 0.05)',
+  },
+  noteHistoryList: {
+    marginTop: 8,
+    padding: '2px 12px',
+    borderRadius: 14,
+    border: '1px solid #D8EAF7',
+    background: '#F8FBFE',
+  },
+  pastNoteItem: {
+    padding: '12px 0',
+    borderTop: '1px solid #E2E8F0',
+  },
+
+  examSection: {
+    marginTop: 26,
   },
   pointsSection: {
     marginTop: 26,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
+import { managementPost } from '@/lib/adminManagementClient'
 import { useParams, useRouter } from 'next/navigation'
 
 type Student = {
@@ -22,7 +23,7 @@ type StudentNote = {
   student_id: string
   title: string | null
   content: string
-  created_at: string
+  created_at: string | null
 }
 
 type EditorRole = 'admin' | 'staff'
@@ -39,6 +40,8 @@ export default function ClassPage() {
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
   const [newNote, setNewNote] = useState<Record<string, string>>({})
   const [noteStatus, setNoteStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({})
+  const [deletingNoteIds, setDeletingNoteIds] = useState<Record<string, boolean>>({})
+  const [noteDeleteErrors, setNoteDeleteErrors] = useState<Record<string, string | null>>({})
 
   const [className, setClassName] = useState('Class')
   const [role, setRole] = useState<EditorRole | null>(null)
@@ -167,6 +170,28 @@ export default function ClassPage() {
     setSaveMsg('Points saved for today.')
   }
 
+  const deleteStudentNote = async (note: StudentNote, studentId: string, studentName: string) => {
+    if (role !== 'admin' || deletingNoteIds[note.id]) return
+    if (!window.confirm(`Delete this note for ${studentName}? Parents will no longer be able to see it.`)) return
+
+    setDeletingNoteIds((current) => ({ ...current, [note.id]: true }))
+    setNoteDeleteErrors((current) => ({ ...current, [note.id]: null }))
+    try {
+      await managementPost({ action: 'delete-student-note', note_id: note.id })
+      setNotesByStudent((current) => ({
+        ...current,
+        [studentId]: (current[studentId] ?? []).filter((item) => item.id !== note.id),
+      }))
+    } catch (error) {
+      setNoteDeleteErrors((current) => ({
+        ...current,
+        [note.id]: error instanceof Error ? error.message : 'The note could not be deleted.',
+      }))
+    } finally {
+      setDeletingNoteIds((current) => ({ ...current, [note.id]: false }))
+    }
+  }
+
   const S = styles(isMobile)
 
   if (loading) {
@@ -274,14 +299,21 @@ return (
                       {notes.map((n) => (
                         <div
                           key={n.id}
-                          style={{
-                            background: 'rgba(255,255,255,0.85)',
-                            border: '1px solid rgba(229,231,235,0.7)',
-                            borderRadius: 13,
-                            padding: 11,
-                            marginBottom: 8,
-                          }}
+                          style={S.existingNote}
                         >
+                          <div style={S.noteAdminRow}>
+                            <span className="nasfat-number" style={S.noteDate}>{n.created_at ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(n.created_at)) : 'Date not recorded'}</span>
+                            {role === 'admin' && <button
+                              className="nasfat-button"
+                              type="button"
+                              disabled={deletingNoteIds[n.id]}
+                              onClick={() => void deleteStudentNote(n, s.id, name)}
+                              style={S.deleteNoteButton}
+                              aria-label={`Delete note for ${name}`}
+                            >
+                              {deletingNoteIds[n.id] ? 'Deleting…' : 'Delete'}
+                            </button>}
+                          </div>
                           {n.title && (
                             <div
                               style={{
@@ -294,6 +326,7 @@ return (
                             </div>
                           )}
                           <div style={{ fontSize: 13 }}>{n.content}</div>
+                          {noteDeleteErrors[n.id] && <div className="nasfat-status" role="alert" style={S.noteError}>{noteDeleteErrors[n.id]}</div>}
                         </div>
                      ))}
 
@@ -350,11 +383,10 @@ return (
                             data: { user },
                           } = await supabase.auth.getUser()
 
-                          const { error } = await supabase.from('student_notes').insert({
-                            student_id: s.id,
-                            content,
-                            created_by: user?.id,
-                          })
+                          const { data: insertedNote, error } = await supabase.from('student_notes')
+                            .insert({ student_id: s.id, content, created_by: user?.id })
+                            .select('id, student_id, title, content, created_at')
+                            .single()
 
                           if (error) {
                             console.error('Note insert error:', error)
@@ -364,6 +396,10 @@ return (
 
                           // success
                           setNewNote((n) => ({ ...n, [s.id]: '' }))
+                          setNotesByStudent((current) => ({
+                            ...current,
+                            [s.id]: [insertedNote as StudentNote, ...(current[s.id] ?? [])],
+                          }))
                           setNoteStatus((n) => ({ ...n, [s.id]: 'saved' }))
 
                           setTimeout(() => {
@@ -665,6 +701,39 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
     fontSize: 12,
     fontWeight: 850,
     textAlign: 'left',
+  },
+
+  existingNote: {
+    marginBottom: 8,
+    padding: 11,
+    borderRadius: 13,
+    border: '1px solid rgba(229, 231, 235, 0.7)',
+    background: 'rgba(255, 255, 255, 0.85)',
+  },
+
+  noteAdminRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 7,
+  },
+
+  noteDate: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: 800,
+  },
+
+  deleteNoteButton: {
+    minHeight: 44,
+    padding: '8px 12px',
+    borderRadius: 11,
+    border: '1px solid #FECACA',
+    background: '#FFF1F2',
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: 900,
   },
 
   notesPanel: {

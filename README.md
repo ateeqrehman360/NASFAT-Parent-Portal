@@ -14,11 +14,13 @@ It is designed primarily for phones, since that is how most parents and staff wi
 - View behaviour points for today and each student's overall total.
 - View the latest Quran, Islamic Studies, and Arabic exam results.
 - Open past exam results when exam history is available.
+- See new teacher notes, mark them as read, and reopen them from past-note history.
 
 ### Admins and staff
 
 - Choose a class and log daily behaviour points for students.
 - Add teacher notes for parents to see.
+- Admins can remove a teacher note when it was added by mistake; staff cannot delete notes.
 - Manage students: add them, edit names and groups, archive students who leave, and restore them later.
 - Manage parent accounts and link one or more students to each parent.
 - Create and edit staff accounts, reset passwords, and archive or restore staff access.
