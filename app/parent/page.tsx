@@ -5,17 +5,29 @@ import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { attendanceSummary, formatAttendancePercentage } from '@/lib/attendance'
 
 type Student = {
   id: string
   first_name: string
   last_name: string | null
+  class_id: string | null
+  active: boolean
+  attendance_started_on: string | null
 }
+
+type ClassRow = { id: string; name: string }
 
 type PointRow = {
   student_id: string
   date: string
   points: number
+}
+
+type AttendanceRow = {
+  student_id: string
+  class_date: string
+  present: boolean
 }
 
 type ExamResult = {
@@ -71,6 +83,8 @@ export default function ParentPage() {
   const [totals, setTotals] = useState<Record<string, number>>({})
   const [todayMap, setTodayMap] = useState<Record<string, number | null>>({})
   const [examResults, setExamResults] = useState<ExamResult[]>([])
+  const [classNames, setClassNames] = useState<Record<string, string>>({})
+  const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([])
   const [examHistoryOpen, setExamHistoryOpen] = useState<Record<string, boolean>>({})
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
@@ -132,7 +146,7 @@ export default function ParentPage() {
 
       const { data: kids, error: kidsErr } = await supabase
         .from('students')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, class_id, active, attendance_started_on')
         .order('first_name')
 
       if (kidsErr) {
@@ -149,13 +163,20 @@ export default function ParentPage() {
         setTotals({})
         setTodayMap({})
         setExamResults([])
+        setClassNames({})
+        setAttendanceRows([])
         setLoading(false)
         return
       }
 
       const ids = studentList.map((s) => s.id)
 
-      const [{ data: rowsData, error: rowsErr }, { data: examData, error: examErr }] = await Promise.all([
+      const [
+        { data: rowsData, error: rowsErr },
+        { data: examData, error: examErr },
+        { data: classData, error: classErr },
+        { data: attendanceData, error: attendanceErr },
+      ] = await Promise.all([
         supabase
           .from('daily_points')
           .select('student_id, date, points')
@@ -166,6 +187,15 @@ export default function ParentPage() {
           .in('student_id', ids)
           .order('exam_date', { ascending: false })
           .order('updated_at', { ascending: false }),
+        supabase
+          .from('classes')
+          .select('id, name')
+          .order('name'),
+        supabase
+          .from('student_attendance')
+          .select('student_id, class_date, present')
+          .in('student_id', ids)
+          .eq('present', true),
       ])
 
       if (rowsErr) {
@@ -177,13 +207,31 @@ export default function ParentPage() {
 
       const rows = (rowsData ?? []) as PointRow[]
 
+      const warnings: string[] = []
       if (examErr) {
         console.error(examErr)
         setExamResults([])
-        setErrorMsg('Exam results are unavailable right now. Behaviour points are still shown.')
+        warnings.push('Exam results are unavailable right now.')
       } else {
         setExamResults((examData ?? []) as ExamResult[])
       }
+
+      if (classErr) {
+        console.error(classErr)
+        setClassNames({})
+        warnings.push('Class names are unavailable right now.')
+      } else {
+        setClassNames(Object.fromEntries(((classData ?? []) as ClassRow[]).map((item) => [item.id, item.name])))
+      }
+
+      if (attendanceErr) {
+        console.error(attendanceErr)
+        setAttendanceRows([])
+        warnings.push('Attendance is unavailable right now.')
+      } else {
+        setAttendanceRows((attendanceData ?? []) as AttendanceRow[])
+      }
+      setErrorMsg(warnings.length ? `${warnings.join(' ')} Behaviour points are still shown.` : null)
 
       // totals
       const t: Record<string, number> = {}
@@ -208,6 +256,14 @@ export default function ParentPage() {
     for (const results of Object.values(grouped)) results.sort(compareExamResults)
     return grouped
   }, [examResults])
+
+  const attendanceDatesByStudent = useMemo(() => {
+    const grouped: Record<string, string[]> = {}
+    for (const row of attendanceRows) {
+      if (row.present) grouped[row.student_id] = [...(grouped[row.student_id] ?? []), row.class_date]
+    }
+    return grouped
+  }, [attendanceRows])
 
   const S = styles(isMobile)
 
@@ -239,7 +295,7 @@ export default function ParentPage() {
           </div>
 
           <div style={S.headerRight}>
-            <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={44} height={44} style={S.headerLogo} />
+            <Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={44} height={44} priority style={S.headerLogo} />
 
             <button
               className="nasfat-button"
@@ -296,6 +352,7 @@ export default function ParentPage() {
               <div style={S.examGrid}>
                 {students.map((s) => {
                   const name = `${s.first_name}${s.last_name ? ` ${s.last_name}` : ''}`
+                  const classLabel = s.class_id ? classNames[s.class_id] ?? 'Class unavailable' : 'Class not assigned'
                   const [latest, ...history] = examResultsByStudent[s.id] ?? []
                   const historyOpen = examHistoryOpen[s.id] ?? false
 
@@ -304,7 +361,7 @@ export default function ParentPage() {
                       <div style={S.childHeader}>
                         <div>
                           <div style={S.childName}>{name}</div>
-                          <div style={S.childMeta}>{latest ? `Latest exam: ${formatExamMonth(latest.exam_date)}` : 'No exam result published yet'}</div>
+                          <div style={S.childMeta}>{classLabel} · {latest ? `Latest exam: ${formatExamMonth(latest.exam_date)}` : 'No exam result published yet'}</div>
                         </div>
                         {latest && <div style={S.badgeUpdated}>Latest</div>}
                       </div>
@@ -362,15 +419,17 @@ export default function ParentPage() {
               <div style={S.grid}>
                 {students.map((s) => {
                   const name = `${s.first_name}${s.last_name ? ` ${s.last_name}` : ''}`
+                  const classLabel = s.class_id ? classNames[s.class_id] ?? 'Class unavailable' : 'Class not assigned'
                   const todayVal = todayMap[s.id]
                   const totalVal = totals[s.id] ?? 0
+                  const attendance = attendanceSummary(s.attendance_started_on, attendanceDatesByStudent[s.id] ?? [])
 
                   return (
                     <article className="nasfat-row nasfat-stagger" key={s.id} style={S.childCard}>
                       <div style={S.childHeader}>
                         <div>
                           <div style={S.childName}>{name}</div>
-                          <div style={S.childMeta}>Madrasa behaviour points</div>
+                          <div style={S.childMeta}>{classLabel} · Madrasa progress</div>
                         </div>
 
                         <div style={todayVal === null ? S.badgePending : S.badgeUpdated}>
@@ -379,6 +438,11 @@ export default function ParentPage() {
                       </div>
 
                       <div style={S.metricsRow}>
+                        <div style={S.metricBox}>
+                          <div style={S.metricLabel}>Attendance</div>
+                          <div className="nasfat-number" style={S.metricValue}>{s.active ? formatAttendancePercentage(attendance.percentage) : '—'}</div>
+                        </div>
+
                         <div style={S.metricBox}>
                           <div style={S.metricLabel}>Today</div>
                           <div className="nasfat-number" style={S.metricValue}>{todayVal === null ? '—' : todayVal}</div>
@@ -390,7 +454,13 @@ export default function ParentPage() {
                         </div>
                       </div>
 
-                      <div style={S.footerNote}>Points reflect behaviour and effort in class.</div>
+                      <div style={S.footerNote}>
+                        {s.active
+                          ? attendance.total > 0
+                            ? `${attendance.attended} of ${attendance.total} Saturday classes attended. Points reflect behaviour and effort in class.`
+                            : 'Attendance starts at 100% and updates after the first completed Saturday class.'
+                          : 'This student is archived; attendance tracking is paused.'}
+                      </div>
                     </article>
                   )
                 })}
@@ -738,29 +808,33 @@ const styles = (isMobile: boolean): Record<string, CSSProperties> => ({
   metricsRow: {
     marginTop: 14,
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 8,
   },
 
   metricBox: {
+    minWidth: 0,
     background: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
-    padding: isMobile ? 14 : 16,
+    borderRadius: 14,
+    padding: isMobile ? '12px 7px' : '14px 10px',
     boxShadow: '0 4px 12px rgba(31, 58, 95, 0.08)',
+    textAlign: 'center',
   },
 
   metricLabel: {
-    fontSize: 12,
+    fontSize: isMobile ? 11 : 12,
     color: '#6B7280',
     fontWeight: 900,
+    lineHeight: 1.2,
   },
 
   metricValue: {
     marginTop: 6,
-    fontSize: isMobile ? 26 : 28,
+    fontSize: isMobile ? 22 : 25,
     fontWeight: 900,
     color: '#1F3A5F',
     letterSpacing: -0.5,
+    overflowWrap: 'anywhere',
   },
 
   footerNote: {

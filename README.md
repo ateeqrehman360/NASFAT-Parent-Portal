@@ -10,6 +10,7 @@ It is designed primarily for phones, since that is how most parents and staff wi
 
 - Sign in with a simple username and password.
 - See every student linked to their account.
+- See which class each student is in and their current Saturday attendance percentage.
 - View behaviour points for today and each student's overall total.
 - View the latest Quran, Islamic Studies, and Arabic exam results.
 - Open past exam results when exam history is available.
@@ -21,6 +22,7 @@ It is designed primarily for phones, since that is how most parents and staff wi
 - Manage students: add them, edit names and groups, archive students who leave, and restore them later.
 - Manage parent accounts and link one or more students to each parent.
 - Create and rename classes.
+- Mark the Saturday attendance register; unmarked students count as absent from Sunday.
 - Add, edit, and review Quran, Islamic Studies, and Arabic exam results by exam month.
 
 ## Why I made it
@@ -48,4 +50,9 @@ Student history is kept when a student or parent is archived, so points, notes, 
 | `/admin/students` | Student management |
 | `/admin/parents` | Parent account and student-link management |
 | `/admin/classes/manage` | Class management |
+| `/admin/attendance` | Saturday attendance register for admins and staff |
 | `/admin/exams` | Exam result entry and history |
+
+## Attendance calculation
+
+Attendance starts at 100% for a newly assigned or restored student. Each Saturday class joins the total on Sunday, so the percentage is calculated from attended Saturday classes divided by completed Saturday classes. This makes the value update automatically without a scheduled job.

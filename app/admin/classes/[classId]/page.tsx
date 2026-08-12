@@ -207,6 +207,7 @@ return (
           alt="NASFAT Manchester"
           width={44}
           height={44}
+          priority
           style={S.headerLogo}
         />
       </header>

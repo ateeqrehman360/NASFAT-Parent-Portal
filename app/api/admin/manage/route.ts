@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { isSaturdayDate, nextSaturdayDate } from '@/lib/attendance'
 
 export const runtime = 'nodejs'
 
@@ -64,11 +65,53 @@ function normalizeExamMonth(value: string) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === normalized ? normalized : null
 }
 
+function currentDate() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date())
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
 async function getStudents() {
   const { data, error } = await supabaseAdmin().from('students')
-    .select('id, first_name, last_name, class_id, active').order('first_name').order('last_name')
+    .select('id, first_name, last_name, class_id, active, attendance_started_on').order('first_name').order('last_name')
   if (error) throw error
   return data ?? []
+}
+
+async function getAttendanceManagement(classId: string, classDate: string) {
+  const { data: classes, error: classError } = await supabaseAdmin().from('classes').select('id, name').order('name')
+  if (classError) throw classError
+
+  const classList = classes ?? []
+  const selectedClassId = classList.some((item) => item.id === classId) ? classId : classList[0]?.id ?? ''
+  if (!selectedClassId) return { classes: classList, selected_class_id: '', students: [], present_student_ids: [] }
+
+  const { data: students, error: studentError } = await supabaseAdmin().from('students')
+    .select('id, first_name, last_name, attendance_started_on')
+    .eq('class_id', selectedClassId)
+    .eq('active', true)
+    .order('first_name')
+    .order('last_name')
+  if (studentError) throw studentError
+
+  const studentList = students ?? []
+  if (!studentList.length) return { classes: classList, selected_class_id: selectedClassId, students: [], present_student_ids: [] }
+
+  const { data: attendance, error: attendanceError } = await supabaseAdmin().from('student_attendance')
+    .select('student_id')
+    .eq('class_date', classDate)
+    .eq('present', true)
+    .in('student_id', studentList.map((student) => student.id))
+  if (attendanceError) throw attendanceError
+
+  return {
+    classes: classList,
+    selected_class_id: selectedClassId,
+    students: studentList,
+    present_student_ids: (attendance ?? []).map((row) => row.student_id),
+  }
 }
 
 async function getClasses() {
@@ -149,12 +192,18 @@ async function replaceParentStudents(parentId: string, studentIds: string[]) {
 export async function GET(request: NextRequest) {
   try {
     const resource = request.nextUrl.searchParams.get('resource')
-    const user = resource === 'exam-management' ? await requireExamEditor(request) : await requireAdmin(request)
-    if (!user) return NextResponse.json({ error: resource === 'exam-management' ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
+    const editorResource = resource === 'exam-management' || resource === 'attendance-management'
+    const user = editorResource ? await requireExamEditor(request) : await requireAdmin(request)
+    if (!user) return NextResponse.json({ error: editorResource ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
     if (resource === 'students') return NextResponse.json({ students: await getStudents() })
     if (resource === 'classes') return NextResponse.json({ classes: await getClasses() })
     if (resource === 'parents') return NextResponse.json({ parents: await getParents() })
     if (resource === 'exam-management') return NextResponse.json(await getExamManagement())
+    if (resource === 'attendance-management') {
+      const classDate = request.nextUrl.searchParams.get('class_date') ?? ''
+      if (!isSaturdayDate(classDate)) return badRequest('Choose a Saturday for the attendance register.')
+      return NextResponse.json(await getAttendanceManagement(request.nextUrl.searchParams.get('class_id') ?? '', classDate))
+    }
     if (resource === 'parent-form') {
       const [{ data: students, error: studentError }, classes] = await Promise.all([
         supabaseAdmin().from('students').select('id, first_name, last_name, class_id, active').order('first_name'), getClasses(),
@@ -173,24 +222,45 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const action = body.action as string
-    const user = action === 'upsert-exam-result' ? await requireExamEditor(request) : await requireAdmin(request)
-    if (!user) return NextResponse.json({ error: action === 'upsert-exam-result' ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
+    const editorAction = action === 'upsert-exam-result' || action === 'save-attendance'
+    const user = editorAction ? await requireExamEditor(request) : await requireAdmin(request)
+    if (!user) return NextResponse.json({ error: editorAction ? 'Admin or staff access required.' : 'Admin access required.' }, { status: 403 })
     if (action === 'create-student' || action === 'update-student') {
       const input: StudentInput = body.student
       const first_name = String(input?.first_name ?? '').trim()
       const last_name = String(input?.last_name ?? '').trim() || null
       const class_id = String(input?.class_id ?? '').trim() || null
       if (!first_name) return badRequest('First name is required.')
-      const payload = { first_name, last_name, class_id }
+      const studentId = String(body.student_id ?? '')
+      let attendanceStartedOn: string | null = class_id ? currentDate() : null
+      if (action === 'update-student') {
+        const { data: existing, error: existingError } = await supabaseAdmin().from('students')
+          .select('id, class_id, attendance_started_on').eq('id', studentId).maybeSingle()
+        if (existingError) throw existingError
+        if (!existing) return badRequest('Student not found.')
+        attendanceStartedOn = class_id
+          ? existing.class_id && existing.attendance_started_on ? existing.attendance_started_on : currentDate()
+          : null
+      }
+      const payload = { first_name, last_name, class_id, attendance_started_on: attendanceStartedOn }
       const query = action === 'create-student'
         ? supabaseAdmin().from('students').insert({ ...payload, active: true })
-        : supabaseAdmin().from('students').update(payload).eq('id', String(body.student_id))
+        : supabaseAdmin().from('students').update(payload).eq('id', studentId)
       const { error } = await query
       if (error) throw error
       return NextResponse.json({ ok: true })
     }
     if (action === 'set-student-active') {
-      const { error } = await supabaseAdmin().from('students').update({ active: Boolean(body.active) }).eq('id', String(body.student_id))
+      const studentId = String(body.student_id)
+      const active = Boolean(body.active)
+      const { data: student, error: studentError } = await supabaseAdmin().from('students')
+        .select('id, class_id').eq('id', studentId).maybeSingle()
+      if (studentError) throw studentError
+      if (!student) return badRequest('Student not found.')
+      const payload = active
+        ? { active: true, attendance_started_on: student.class_id ? currentDate() : null }
+        : { active: false }
+      const { error } = await supabaseAdmin().from('students').update(payload).eq('id', studentId)
       if (error) throw error
       return NextResponse.json({ ok: true })
     }
@@ -262,6 +332,69 @@ export async function POST(request: NextRequest) {
       })
       if (authError) throw authError
       return NextResponse.json({ ok: true })
+    }
+    if (action === 'save-attendance') {
+      const classId = String(body.class_id ?? '')
+      const classDate = String(body.class_date ?? '')
+      const requestedPresentIds = [...new Set(Array.isArray(body.present_student_ids) ? body.present_student_ids.map(String) : [])]
+      if (!classId || !isSaturdayDate(classDate)) return badRequest('Choose a class and a Saturday.')
+      if (classDate > nextSaturdayDate()) return badRequest('Attendance cannot be recorded beyond the next Saturday.')
+
+      const [{ data: selectedClass, error: classError }, { data: students, error: studentError }] = await Promise.all([
+        supabaseAdmin().from('classes').select('id').eq('id', classId).maybeSingle(),
+        supabaseAdmin().from('students').select('id, attendance_started_on').eq('class_id', classId).eq('active', true),
+      ])
+      if (classError) throw classError
+      if (studentError) throw studentError
+      if (!selectedClass) return badRequest('Class not found.')
+
+      const studentList = students ?? []
+      const activeIds = new Set(studentList.map((student) => student.id))
+      if (requestedPresentIds.some((studentId) => !activeIds.has(studentId))) {
+        return badRequest('The register contains a student who is not active in this class.')
+      }
+
+      const eligibleIds = studentList
+        .filter((student) => student.attendance_started_on && student.attendance_started_on <= classDate)
+        .map((student) => student.id)
+      const eligibleIdSet = new Set(eligibleIds)
+      if (requestedPresentIds.some((studentId) => !eligibleIdSet.has(studentId))) {
+        return badRequest('Attendance tracking for one of the selected students starts after this class date.')
+      }
+      if (!eligibleIds.length) return NextResponse.json({ ok: true, present_count: 0, student_count: 0 })
+
+      const { data: existing, error: existingError } = await supabaseAdmin().from('student_attendance')
+        .select('id, student_id, class_id, class_date, present, marked_by, created_at, updated_at')
+        .eq('class_date', classDate)
+        .in('student_id', eligibleIds)
+      if (existingError) throw existingError
+
+      const { error: deleteError } = await supabaseAdmin().from('student_attendance')
+        .delete()
+        .eq('class_date', classDate)
+        .in('student_id', eligibleIds)
+      if (deleteError) throw deleteError
+
+      if (requestedPresentIds.length) {
+        const timestamp = new Date().toISOString()
+        const { error: insertError } = await supabaseAdmin().from('student_attendance').insert(requestedPresentIds.map((studentId) => ({
+          student_id: studentId,
+          class_id: classId,
+          class_date: classDate,
+          present: true,
+          marked_by: user.id,
+          updated_at: timestamp,
+        })))
+        if (insertError) {
+          if ((existing ?? []).length) {
+            const { error: restoreError } = await supabaseAdmin().from('student_attendance').insert(existing)
+            if (restoreError) console.error('Attendance restore failed', restoreError)
+          }
+          throw insertError
+        }
+      }
+
+      return NextResponse.json({ ok: true, present_count: requestedPresentIds.length, student_count: eligibleIds.length })
     }
     if (action === 'upsert-exam-result') {
       const studentId = String(body.student_id ?? '')

@@ -9,7 +9,7 @@ export const ui: Record<string, CSSProperties> = {
   content: { width: '100%', maxWidth: 840, margin: '0 auto', paddingBottom: 'max(42px, env(safe-area-inset-bottom))' },
   header: { background: 'rgba(255,255,255,.92)', border: '1px solid rgba(203,213,225,.78)', borderRadius: 24, padding: 'clamp(15px, 3vw, 20px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', boxShadow: '0 14px 38px rgba(31,58,95,.10)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' },
   headerCopy: { minWidth: 0, flex: '1 1 210px' },
-  headerActions: { display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' },
+  headerActions: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginLeft: 'auto', flexWrap: 'wrap' },
   eyebrow: { marginBottom: 6, color: '#4E83A5', fontSize: 11, fontWeight: 900, lineHeight: 1, letterSpacing: '.11em', textTransform: 'uppercase' },
   title: { color: '#1F3A5F', fontSize: 'clamp(21px, 5vw, 27px)', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-.025em' },
   subtitle: { marginTop: 5, color: '#6B7280', fontSize: 14, fontWeight: 600, lineHeight: 1.45 },
@@ -46,7 +46,7 @@ export const ui: Record<string, CSSProperties> = {
 export function ManagementPage({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   const router = useRouter()
   return <main className="nasfat-app" style={ui.page}><div style={ui.content}>
-    <header className="nasfat-surface nasfat-enter" style={ui.header}><div style={ui.headerCopy}><div style={ui.eyebrow}>Admin management</div><div data-heading="true" style={ui.title}>{title}</div><div data-body="true" style={ui.subtitle}>{subtitle}</div></div><div style={ui.headerActions}><button className="nasfat-button" type="button" aria-label="Back to the admin dashboard" onClick={() => router.push('/admin')} style={ui.button}>← Admin</button><Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={46} height={46} style={ui.logo} /></div></header>
+    <header className="nasfat-surface nasfat-enter" style={ui.header}><div style={ui.headerCopy}><div style={ui.eyebrow}>Admin management</div><div data-heading="true" style={ui.title}>{title}</div><div data-body="true" style={ui.subtitle}>{subtitle}</div></div><div style={ui.headerActions}><button className="nasfat-button" type="button" aria-label="Back to the admin dashboard" onClick={() => router.push('/admin')} style={ui.button}>← Admin</button><Image className="nasfat-logo" src="/nasfat-logo.png" alt="NASFAT Manchester" width={46} height={46} priority style={ui.logo} /></div></header>
     {children}
   </div></main>
 }
